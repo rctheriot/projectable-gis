@@ -376,6 +376,7 @@ async function buildStory(story) {
       outlineColor: layer.outlineColor,
       lineWidth: layer.lineWidth,
       opacity: layer.opacity,
+      outlineOpacity: layer.outlineOpacity,
       defaultActive: layer.defaultActive,
       buildoutTotal: layer.buildoutTotal,
     })),

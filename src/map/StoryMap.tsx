@@ -115,7 +115,7 @@ function addStoryLayers(map: MapLibreMap, loaded: LoadedStory, scenarioId: strin
         paint: {
           'line-color': outlineColorExpression(layer, budget, year),
           'line-width': typeof layer.lineWidth === 'number' ? Math.max(layer.lineWidth, 0.5) : 0.5,
-          'line-opacity': 0.6,
+          'line-opacity': layer.outlineOpacity ?? 0.6,
         },
       });
     }

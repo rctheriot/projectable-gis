@@ -193,6 +193,14 @@ export interface StoryLayer {
   /** For `line` layers this is the stroke width; supports a property multiplier. */
   lineWidth?: number | { property: string; multiplier: number; minimum?: number };
   opacity?: number;
+  /**
+   * Opacity of the outline, independent of the fill.
+   *
+   * A zone boundary often needs to be far more solid than the area it encloses --
+   * "am I inside it" is the question -- while a layer of thousands of small parcels
+   * wants a faint edge that does not turn into noise.
+   */
+  outlineOpacity?: number;
   /** Shown as on when the story opens. */
   defaultActive?: boolean;
   /**

@@ -78,6 +78,21 @@
   ],
   "layers": [
     {
+      "id": "tsunami-extreme",
+      "name": "Extreme Tsunami Evacuation Zone",
+      "description": "The larger zone for a rare, worst-case Aleutian-source event. Roughly twice the area of the standard zone in places.",
+      "data": "stories/oahu-sea-level/layers/tsunami-extreme.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#C2452C",
+      "outlineColor": "#FF9E85",
+      "lineWidth": 1.5,
+      "opacity": 0.45,
+      "outlineOpacity": 0.9
+    },
+    {
       "id": "tsunami-evacuation",
       "name": "Tsunami Evacuation Zone",
       "description": "Where to leave during a tsunami warning. This is a hazard Oahu already lives with, mapped independently of sea level rise -- useful as the baseline the rising water is measured against.",
@@ -87,19 +102,10 @@
         "type": "static"
       },
       "color": "#E8A33D",
-      "opacity": 0.35
-    },
-    {
-      "id": "tsunami-extreme",
-      "name": "Extreme Tsunami Evacuation Zone",
-      "description": "The larger zone for a rare, worst-case Aleutian-source event. Roughly twice the area of the standard zone in places.",
-      "data": "stories/oahu-sea-level/layers/tsunami-extreme.geojson",
-      "render": "fill",
-      "fill": {
-        "type": "static"
-      },
-      "color": "#D2604A",
-      "opacity": 0.3
+      "outlineColor": "#FFD98A",
+      "lineWidth": 1.5,
+      "opacity": 0.55,
+      "outlineOpacity": 0.9
     },
     {
       "id": "slr-exposure",
@@ -135,7 +141,7 @@
         ]
       },
       "color": "#1F4E96",
-      "opacity": 0.75,
+      "opacity": 0.8,
       "defaultActive": true
     },
     {
@@ -172,7 +178,7 @@
         ]
       },
       "color": "#1F4E96",
-      "opacity": 0.75,
+      "opacity": 0.8,
       "defaultActive": false
     },
     {
@@ -209,7 +215,7 @@
         ]
       },
       "color": "#1F4E96",
-      "opacity": 0.75,
+      "opacity": 0.8,
       "defaultActive": false
     },
     {
@@ -246,7 +252,7 @@
         ]
       },
       "color": "#1F4E96",
-      "opacity": 0.75,
+      "opacity": 0.8,
       "defaultActive": false
     },
     {

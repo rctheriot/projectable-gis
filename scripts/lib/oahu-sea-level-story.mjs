@@ -64,7 +64,7 @@ const thresholdLayer = (id, name, description, layerIds, options = {}) => ({
   description,
   render: options.render ?? 'fill',
   color: options.color ?? LEVEL_COLORS[3],
-  opacity: options.opacity ?? 0.75,
+  opacity: options.opacity ?? 0.8,
   lineWidth: options.lineWidth,
   defaultActive: options.defaultActive ?? false,
   remote: {
@@ -126,17 +126,29 @@ const STORY = {
 };
 
 const LAYERS = [
+  /*
+   * The extreme zone is declared first so it sits *underneath* the standard one.
+   * It is the larger of the two and contains it, so painting it on top would hide
+   * the zone people are actually told to evacuate.
+   *
+   * Both carry a bright outline. A zone boundary is the thing that matters -- "am I
+   * inside it" -- and a fill alone has to be opaque enough to obscure the terrain
+   * before the edge reads reliably against a satellite photo.
+   */
   {
-    id: 'tsunami-evacuation',
-    name: 'Tsunami Evacuation Zone',
+    id: 'tsunami-extreme',
+    name: 'Extreme Tsunami Evacuation Zone',
     description:
-      'Where to leave during a tsunami warning. This is a hazard Oahu already lives with, mapped independently of sea level rise -- useful as the baseline the rising water is measured against.',
+      'The larger zone for a rare, worst-case Aleutian-source event. Roughly twice the area of the standard zone in places.',
     render: 'fill',
-    color: '#E8A33D',
-    opacity: 0.35,
+    color: '#C2452C',
+    outlineColor: '#FF9E85',
+    outlineOpacity: 0.9,
+    lineWidth: 1.5,
+    opacity: 0.45,
     remote: {
       service: HAZARDS,
-      variants: [{ layer: 2 }],
+      variants: [{ layer: 12 }],
       where: "island='OAHU'",
       bbox: OAHU_BBOX,
       simplify: SIMPLIFY,
@@ -144,16 +156,19 @@ const LAYERS = [
     fill: { type: 'static' },
   },
   {
-    id: 'tsunami-extreme',
-    name: 'Extreme Tsunami Evacuation Zone',
+    id: 'tsunami-evacuation',
+    name: 'Tsunami Evacuation Zone',
     description:
-      'The larger zone for a rare, worst-case Aleutian-source event. Roughly twice the area of the standard zone in places.',
+      'Where to leave during a tsunami warning. This is a hazard Oahu already lives with, mapped independently of sea level rise -- useful as the baseline the rising water is measured against.',
     render: 'fill',
-    color: '#D2604A',
-    opacity: 0.3,
+    color: '#E8A33D',
+    outlineColor: '#FFD98A',
+    outlineOpacity: 0.9,
+    lineWidth: 1.5,
+    opacity: 0.55,
     remote: {
       service: HAZARDS,
-      variants: [{ layer: 12 }],
+      variants: [{ layer: 2 }],
       where: "island='OAHU'",
       bbox: OAHU_BBOX,
       simplify: SIMPLIFY,
