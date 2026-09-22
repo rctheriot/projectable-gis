@@ -32,6 +32,21 @@ export interface Settings {
   legendWidth: number;
   /** Diameter of the projected puck halo, in CSS pixels. */
   puckSize: number;
+
+  /**
+   * Projector alignment: how the map is scaled and shifted to land on the physical
+   * relief model.
+   *
+   * The projector's height above the table is not fixed, so the thrown image is a
+   * different size every time the rig is set up. These nudge the map camera -- base
+   * map and every layer together, since they share one camera -- until the coastline
+   * lines up with the printed one.
+   */
+  mapScale: number;
+  mapOffsetX: number;
+  mapOffsetY: number;
+  /** Degrees, for a projector that is not square to the table. */
+  mapRotation: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -44,6 +59,10 @@ export const DEFAULT_SETTINGS: Settings = {
   railWidth: 1120,
   legendWidth: 260,
   puckSize: 120,
+  mapScale: 1,
+  mapOffsetX: 0,
+  mapOffsetY: 0,
+  mapRotation: 0,
 };
 
 interface SettingsState extends Settings {

@@ -1,5 +1,12 @@
 [
   {
+    "id": "oahu-sea-level",
+    "title": "Oahu and the Rising Sea",
+    "subtitle": "Which ground goes under, and which is already a tsunami evacuation zone",
+    "coverImage": "stories/oahu-sea-level/base-map.webp",
+    "path": "stories/oahu-sea-level/story.json"
+  },
+  {
     "id": "oahu-energy",
     "title": "Oahu Energy Goals",
     "subtitle": "Land, time and trade-offs on the way to 100% renewable by 2045",

@@ -507,8 +507,9 @@ button { font: inherit; color: inherit; }
 .legend { display: flex; flex-direction: column; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
 
 .legend__item {
-  display: grid;
-  grid-template-columns: 0.55rem 1.6rem minmax(0, 1fr) auto;
+  /* Flex, not a fixed grid: a story's layers may or may not have icons, and an
+     absent icon must not shift the name into the icon's column. */
+  display: flex;
   align-items: center;
   gap: 0.6rem;
   width: 100%;
@@ -530,7 +531,7 @@ button { font: inherit; color: inherit; }
 
 .legend__swatch { width: 0.55rem; height: 1.9rem; border-radius: 3px; }
 .legend__icon { width: 1.6rem; height: 1.6rem; object-fit: contain; }
-.legend__text { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.legend__text { flex: 1; display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
 .legend__name { font-size: 0.95em; }
 
 /* Says why an active layer may be drawing little or nothing at this year. */
@@ -541,6 +542,7 @@ button { font: inherit; color: inherit; }
 }
 
 .legend__state {
+  flex: none;
   color: var(--ink-muted);
   font-size: 0.7em;
   font-weight: 600;
@@ -699,13 +701,35 @@ button { font: inherit; color: inherit; }
 .calibration {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr minmax(20rem, 28rem);
+  grid-template-columns: min(var(--rail-width), 46vw) 1fr;
   height: 100%;
   background: #000;
 }
 
-/* The targets are projected onto the table surface; a puck goes on the lit one. */
-.calibration__field { position: relative; }
+/* Mirrors the table's rail so the puck zone lands in the same physical place. */
+.calibration__rail {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+  border-right: 1px solid var(--border);
+}
+
+.calibration__railTop { display: grid; place-items: center; padding: 1.5rem; }
+
+.calibration__zoneNote {
+  max-width: 26ch;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.9em;
+  text-align: center;
+}
+
+/* The camera's field of view. Targets are projected here and nowhere else. */
+.calibration__field {
+  position: relative;
+  border-top: 1px dashed var(--border-strong);
+  overflow: hidden;
+}
 
 .calibration__target {
   position: absolute;
@@ -868,3 +892,49 @@ button { font: inherit; color: inherit; }
 
 /* `label.button` wraps a hidden file input, so it needs the button's box. */
 label.button { display: inline-flex; align-items: center; }
+
+/* --------------------------------------------------------- align overlay */
+
+/*
+ * Sits over the live map so the coastline stays visible underneath; only the
+ * instruction panel is lit, and it is pinned away from the island.
+ */
+.align {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.align__panel {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 3rem;
+  width: 18rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: #000;
+}
+
+.align__title { margin: 0 0 0.3rem; font-size: 1.1em; font-weight: 500; }
+.align__lede { margin: 0 0 0.8rem; color: var(--ink-secondary); font-size: 0.85em; }
+
+.align__keys { display: grid; gap: 0.3rem; margin: 0 0 0.8rem; font-size: 0.85em; }
+.align__keys > div { display: flex; align-items: center; gap: 0.6rem; }
+.align__keys dt { display: flex; gap: 0.2rem; }
+.align__keys dd { margin: 0; color: var(--ink-muted); }
+
+kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0.05em 0.35em;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.align__values { margin: 0; font-size: 0.82em; font-variant-numeric: tabular-nums; }
+.align__note { margin: 0.3rem 0 0; color: var(--ink-muted); font-size: 0.78em; }

@@ -3,7 +3,7 @@ import { ArucoPuckSource } from '@/pucks/ArucoPuckSource';
 import { CALIBRATION_TARGETS, clearCalibration, saveCalibration } from '@/pucks/calibration';
 import { applyHomography, computeHomography, type Correspondence } from '@/pucks/homography';
 import type { PuckFrame, PuckReading } from '@/pucks/types';
-import { useSettings } from '@/state/useSettings';
+import { layoutVars, useSettings } from '@/state/useSettings';
 
 interface Props {
   onDone: () => void;
@@ -21,6 +21,7 @@ interface Props {
  * hand and the residual error was corrected with arrow keys every session.
  */
 export function CalibrationView({ onDone }: Props) {
+  const settings = useSettings();
   const deviceId = useSettings((s) => s.cameraDeviceId);
   const width = useSettings((s) => s.cameraWidth);
   const height = useSettings((s) => s.cameraHeight);
@@ -83,18 +84,32 @@ export function CalibrationView({ onDone }: Props) {
   };
 
   return (
-    <div className="calibration">
-      {/* The targets are projected onto the table; the puck goes on the lit one. */}
-      <div className="calibration__field">
-        {CALIBRATION_TARGETS.map((point, index) => (
-          <div
-            key={`${point.x}-${point.y}`}
-            className={`calibration__target${index === step ? ' is-current' : ''}${index < step ? ' is-done' : ''}`}
-            style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
-          >
-            <span className="calibration__targetIndex">{index + 1}</span>
-          </div>
-        ))}
+    /*
+     * The layout deliberately mirrors the table: the camera under the table sees
+     * only the puck area, so the targets have to be projected inside that same
+     * region. Table coordinates are normalised across this zone, not the screen,
+     * so a target at 0.5, 0.5 must land at the middle of the puck area.
+     */
+    <div className="calibration" style={layoutVars(settings)}>
+      <div className="calibration__rail">
+        <div className="calibration__railTop">
+          <p className="calibration__zoneNote">
+            The camera sees only the puck area below. Targets are projected there.
+          </p>
+        </div>
+
+        <div className="calibration__field">
+          {CALIBRATION_TARGETS.map((point, index) => (
+            <div
+              key={`${point.x}-${point.y}`}
+              className={`calibration__target${index === step ? ' is-current' : ''}${index < step ? ' is-done' : ''}`}
+              style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
+            >
+              <span className="calibration__targetIndex">{index + 1}</span>
+            </div>
+          ))}
+          <p className="puck-zone__hint">Puck area</p>
+        </div>
       </div>
 
       <div className="calibration__panel">

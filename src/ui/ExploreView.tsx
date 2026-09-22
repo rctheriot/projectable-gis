@@ -3,6 +3,7 @@ import { CapacityLine } from '@/charts/CapacityLine';
 import { GenerationBars } from '@/charts/GenerationBars';
 import { StoryMap } from '@/map/StoryMap';
 import { useStore } from '@/state/useStore';
+import { dialLabel, formatDial, formatDialRange } from '@/story/dial';
 import type { LoadedStory } from '@/story/loadStory';
 import { Legend } from './Legend';
 
@@ -136,12 +137,12 @@ export function ExploreView({ loaded, onClose }: Props) {
             type="button"
             className="timeline__play"
             onClick={togglePlay}
-            aria-label={playing ? 'Pause' : 'Play through the years'}
+            aria-label={playing ? 'Pause' : `Play through ${dialLabel(story).toLowerCase()}`}
           >
             {playing ? '❘❘' : '▶'}
           </button>
 
-          <span className="timeline__year">{year}</span>
+          <span className="timeline__year">{formatDial(story, year)}</span>
 
           <input
             className="timeline__slider"
@@ -154,12 +155,10 @@ export function ExploreView({ loaded, onClose }: Props) {
               setPlaying(false);
               setYear(Number(event.target.value));
             }}
-            aria-label="Year"
+            aria-label={dialLabel(story)}
           />
 
-          <span className="timeline__bounds">
-            {story.years.min}&ndash;{story.years.max}
-          </span>
+          <span className="timeline__bounds">{formatDialRange(story)}</span>
         </footer>
       ) : null}
     </div>

@@ -150,7 +150,29 @@ export interface JoinedChoroplethFill {
   firstYear?: number;
 }
 
-export type FillMode = StaticFill | CategoricalFill | BuildoutFill | JoinedChoroplethFill;
+/**
+ * Features appear once the dial reaches the level recorded on them.
+ *
+ * Used for nested hazard footprints -- each sea level rise scenario is a separate
+ * published dataset, tagged with its level and stacked largest-first, so turning the
+ * dial reveals bands and you can see which ground goes under soonest.
+ */
+export interface ThresholdFill {
+  type: 'threshold';
+  /** Feature property holding the level at which the feature turns on. */
+  property: string;
+  /** The dial is an integer; multiply by this to get the compared value. */
+  dialScale?: number;
+  /** Colour per level, lowest first. A sequential ramp, since this is magnitude. */
+  levels: { value: number; color: string; label?: string }[];
+}
+
+export type FillMode =
+  | StaticFill
+  | CategoricalFill
+  | BuildoutFill
+  | JoinedChoroplethFill
+  | ThresholdFill;
 
 // ---------------------------------------------------------------------------
 // Layers
@@ -215,12 +237,29 @@ export interface ChartSpec {
   unit?: string;
 }
 
+/**
+ * How the main dial reads.
+ *
+ * The store always holds an integer, because a puck emits discrete steps. This says
+ * how to turn that integer into something meaningful: a year reads as-is, while a
+ * sea level in tenths of a foot reads as `1.1 ft`.
+ */
+export interface DialSpec {
+  label: string;
+  /** Multiplies the stored integer for display and for threshold comparisons. */
+  scale?: number;
+  decimals?: number;
+  unit?: string;
+}
+
 export interface Story {
   id: string;
   title: string;
   subtitle?: string;
-  /** Inclusive year range the year puck scrubs. Equal values disable the year puck. */
+  /** Inclusive range the dial scrubs. Equal values disable it. */
   years: { min: number; max: number };
+  /** Defaults to a plain year readout. */
+  dial?: DialSpec;
   scenarios: Scenario[];
   baseMap: BaseMap;
   layers: StoryLayer[];

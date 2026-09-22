@@ -143,6 +143,31 @@ computer vision, coordinate maths, application state, and rendering all shared o
 TypeScript with live d3 closures embedded per layer and hand-tuned `vw`/`vh`
 constants per UI element.
 
+### Stories
+
+| Story | Dial | Data |
+|---|---|---|
+| **Oahu Energy Goals** | year, 2016&ndash;2045 | Utility and consultant scenarios from the legacy project |
+| **Oahu and the Rising Sea** | sea level, 0.0&ndash;3.2 ft | Hawai'i Statewide GIS Program, fetched at build time |
+
+The dial is not always a year. A story declares how it reads (`dial: { label, scale,
+decimals, unit }`), so the sea level story scrubs feet in tenths rather than
+inventing years the published data does not support &mdash; the State's four scenarios
+were tied to 2100 in 2017 and the 2022 guidance revised the timing without
+republishing the maps.
+
+### Remote data
+
+A layer can name an ArcGIS REST service instead of a local file. It is fetched
+**once, at build time**, generalized by the server, simplified again locally, and
+committed &mdash; visitors only ever hit our own site, and the upstream agency is asked
+for the data once per change rather than once per visitor. Raw responses are cached
+in `.cache/`.
+
+Simplification matters more than it sounds: the 3.2 ft exposure area for Oahu is
+23MB and 851,000 points at source, which is far finer than a projector pixel. At a
+5m tolerance it is 1MB, with the coastline unchanged at table scale.
+
 ### Adding a story
 
 1. Copy `scripts/lib/oahu-story.mjs`, point `sourceDir` at your assets, describe

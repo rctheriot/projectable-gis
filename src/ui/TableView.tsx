@@ -5,7 +5,9 @@ import { StoryMap } from '@/map/StoryMap';
 import { usePucks, type SourceKind } from '@/pucks/usePucks';
 import { layoutVars, useSettings } from '@/state/useSettings';
 import { useStore } from '@/state/useStore';
+import { dialLabel, formatDial, formatDialRange } from '@/story/dial';
 import type { LoadedStory } from '@/story/loadStory';
+import { AlignOverlay } from './AlignOverlay';
 import { CalibrationView } from './CalibrationView';
 import { Legend } from './Legend';
 import { PuckOverlay } from './PuckOverlay';
@@ -40,17 +42,18 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
   const armedLayer = story.layers[armedLayerIndex];
 
   const [calibrating, setCalibrating] = useState(false);
+  const [aligning, setAligning] = useState(false);
   const settings = useSettings();
   const { pucks, status, sourceLabel } = usePucks(story.pucks, sourceKind, websocketUrl);
 
   const readouts = useMemo(
     () => ({
-      Year: String(year),
+      [dialLabel(story)]: formatDial(story, year),
       Scenario: scenario?.name ?? '',
       Layer: armedLayer?.name ?? '',
       'Add / Remove': armedLayer && activeLayerIds.has(armedLayer.id) ? 'remove' : 'add',
     }),
-    [year, scenario, armedLayer, activeLayerIds],
+    [story, year, scenario, armedLayer, activeLayerIds],
   );
 
   // Calibration needs the camera to itself, so it replaces the view entirely.
@@ -69,13 +72,16 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
 
           <div className="readout-row">
             <div className="readout">
-              <span className="readout__label">Year</span>
-              <span className="readout__value">{year}</span>
+              <span className="readout__label">{dialLabel(story)}</span>
+              <span className="readout__value">{formatDial(story, year)}</span>
+              <span className="readout__range">{formatDialRange(story)}</span>
             </div>
-            <div className="readout">
-              <span className="readout__label">Scenario</span>
-              <span className="readout__value readout__value--small">{scenario?.name}</span>
-            </div>
+            {story.scenarios.length > 1 ? (
+              <div className="readout">
+                <span className="readout__label">Scenario</span>
+                <span className="readout__value readout__value--small">{scenario?.name}</span>
+              </div>
+            ) : null}
           </div>
 
           {story.charts.map((spec) =>
@@ -110,7 +116,20 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
         </div>
       </aside>
 
-      <StoryMap loaded={loaded} year={year} scenarioId={scenario?.id ?? ''} activeLayerIds={activeLayerIds} />
+      <StoryMap
+        loaded={loaded}
+        year={year}
+        scenarioId={scenario?.id ?? ''}
+        activeLayerIds={activeLayerIds}
+        align={{
+          scale: settings.mapScale,
+          offsetX: settings.mapOffsetX,
+          offsetY: settings.mapOffsetY,
+          rotation: settings.mapRotation,
+        }}
+      />
+
+      {aligning ? <AlignOverlay onDone={() => setAligning(false)} /> : null}
 
       <footer className="status-bar">
         <span className={`status-bar__dot${status.connected ? ' is-connected' : ''}`} aria-hidden />
@@ -123,6 +142,9 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
               Calibrate
             </button>
           ) : null}
+          <button type="button" className="status-bar__action" onClick={() => setAligning(true)}>
+            Align
+          </button>
           <button type="button" className="status-bar__action" onClick={onOpenSettings}>
             Settings
           </button>

@@ -25,6 +25,13 @@ function layerStatus(layer: StoryLayer, loaded: LoadedStory, scenarioId: string,
     return `from ${fill.firstYear}`;
   }
 
+  if (fill.type === 'threshold') {
+    const level = year * (fill.dialScale ?? 1);
+    const reached = fill.levels.filter((stop) => stop.value <= level + 1e-9);
+    if (reached.length === 0) return 'none yet';
+    return `to ${reached[reached.length - 1]?.label ?? reached[reached.length - 1]?.value}`;
+  }
+
   if (fill.type === 'buildout' && layer.buildoutTotal) {
     const budget = resolveBudget(fill.budget, loaded.data, scenarioId, year);
     const share = Math.min(100, Math.max(0, (budget / layer.buildoutTotal) * 100));

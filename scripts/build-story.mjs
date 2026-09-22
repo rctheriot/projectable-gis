@@ -14,8 +14,10 @@
 import { createRequire } from 'node:module';
 import { mkdir, readFile, writeFile, copyFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { annotateBuildout } from './lib/buildout.mjs';
+import { simplifyFeatures } from './lib/simplify.mjs';
 import { PROJECT_ROOT } from './lib/paths.mjs';
 import { STORIES } from './lib/stories.mjs';
 
@@ -26,6 +28,15 @@ const sharp = require('sharp');
 const MAX_TEXTURE_SIZE = 4096;
 /** ~11cm at the equator. Plenty for parcel polygons on a 3x2m table. */
 const COORD_PRECISION = 6;
+
+/** Raw upstream responses, so iterating on a story does not re-download them. */
+const CACHE_DIR = path.join(PROJECT_ROOT, '.cache');
+
+/**
+ * Server-side generalization tolerance, in degrees. ~2.2m at Oahu's latitude, well
+ * under the 5m we simplify to ourselves.
+ */
+const GENERALIZE_DEGREES = 0.00002;
 
 const args = process.argv.slice(2);
 const flag = (name) => {
@@ -56,6 +67,114 @@ function trimProperties(feature, keep) {
   feature.properties = kept;
   delete feature.id;
   delete feature.bbox;
+}
+
+/**
+ * Downloads one ArcGIS feature layer as GeoJSON, clipped to a bounding box.
+ *
+ * Responses are cached on disk. These are tens of megabytes each and the upstream
+ * service is a public agency's -- there is no reason to ask for the same bytes
+ * twice while iterating on a story.
+ */
+async function fetchArcGis(service, layerId, { where = '1=1', bbox, outFields = '', offset = GENERALIZE_DEGREES }) {
+  const cacheKey = `${service}/${layerId}/${where}/${(bbox ?? []).join(',')}/${outFields}/${offset}`;
+  const cacheFile = path.join(
+    CACHE_DIR,
+    `${createHash('sha1').update(cacheKey).digest('hex').slice(0, 16)}.geojson`,
+  );
+
+  if (existsSync(cacheFile)) {
+    return JSON.parse(await readFile(cacheFile, 'utf8'));
+  }
+
+  const params = new URLSearchParams({
+    where,
+    outSR: '4326',
+    returnGeometry: 'true',
+    // Trimming at the source keeps the download to what we will actually keep.
+    geometryPrecision: '6',
+    /*
+     * Ask the server to generalize before sending. Without this the 3.2 ft passive
+     * flooding layer simply fails with a 500 -- the full-precision geometry is too
+     * large to serialize -- and everything else takes far longer than it needs to.
+     * The offset is well below our own simplification tolerance, so nothing visible
+     * is lost.
+     */
+    maxAllowableOffset: String(offset),
+    outFields: outFields || 'OBJECTID',
+    f: 'geojson',
+  });
+
+  if (bbox) {
+    params.set(
+      'geometry',
+      JSON.stringify({
+        xmin: bbox[0],
+        ymin: bbox[1],
+        xmax: bbox[2],
+        ymax: bbox[3],
+        spatialReference: { wkid: 4326 },
+      }),
+    );
+    params.set('geometryType', 'esriGeometryEnvelope');
+    params.set('spatialRel', 'esriSpatialRelIntersects');
+  }
+
+  const url = `${service}/${layerId}/query?${params}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${service}/${layerId} returned ${response.status}`);
+
+  const text = await response.text();
+  let geojson;
+  try {
+    geojson = JSON.parse(text);
+  } catch {
+    throw new Error(`${service}/${layerId} did not return JSON: ${text.slice(0, 200)}`);
+  }
+  if (geojson.error) throw new Error(`${service}/${layerId}: ${geojson.error.message}`);
+
+  await mkdir(CACHE_DIR, { recursive: true });
+  await writeFile(cacheFile, JSON.stringify(geojson));
+  return geojson;
+}
+
+/**
+ * Builds one layer from remote sources.
+ *
+ * A layer may be assembled from several published datasets -- each sea level rise
+ * scenario is its own layer upstream -- which are tagged with the properties that
+ * distinguish them and concatenated into one file, so the runtime needs a single
+ * source and a single paint expression.
+ */
+async function fetchRemoteFeatures(layer) {
+  const remote = layer.remote;
+  if (remote.generalizeDegrees === undefined) remote.generalizeDegrees = GENERALIZE_DEGREES;
+  const features = [];
+
+  for (const variant of remote.variants) {
+    const geojson = await fetchArcGis(remote.service, variant.layer, {
+      where: variant.where ?? remote.where,
+      bbox: remote.bbox,
+      outFields: remote.outFields,
+      offset: remote.generalizeDegrees,
+    });
+
+    for (const feature of geojson.features ?? []) {
+      if (!feature.geometry) continue;
+      feature.properties = { ...(remote.keepFrom ? feature.properties : {}), ...variant.properties };
+      features.push(feature);
+    }
+  }
+
+  // Draw order within the file: the widest footprint first, so narrower, nearer-term
+  // bands sit on top of it rather than being buried.
+  if (remote.sortBy) {
+    const { property, direction } = remote.sortBy;
+    const sign = direction === 'desc' ? -1 : 1;
+    features.sort((a, b) => sign * ((a.properties[property] ?? 0) - (b.properties[property] ?? 0)));
+  }
+
+  return features;
 }
 
 function parseCsv(text) {
@@ -106,18 +225,38 @@ async function buildJoinTable(join, SOURCE) {
 }
 
 async function buildLayer(story, layer, joinTables, SOURCE, OUT) {
-  const src = path.join(SOURCE, layer.source);
-  const raw = await readFile(src);
-  const geojson = JSON.parse(raw.toString('utf8'));
-  const features = geojson.features.filter((f) => f?.geometry);
+  let geojson;
+  let features;
+  let rawBytes = 0;
 
-  const keep = new Set(layer.keepProperties ?? []);
-  for (const feature of features) {
-    trimProperties(feature, keep);
-    roundCoords(feature.geometry.coordinates);
+  if (layer.remote) {
+    features = await fetchRemoteFeatures(layer);
+    rawBytes = JSON.stringify(features).length;
+    geojson = { type: 'FeatureCollection', features };
+  } else {
+    const src = path.join(SOURCE, layer.source);
+    const raw = await readFile(src);
+    rawBytes = raw.byteLength;
+    geojson = JSON.parse(raw.toString('utf8'));
+    features = geojson.features.filter((f) => f?.geometry);
+
+    const keep = new Set(layer.keepProperties ?? []);
+    for (const feature of features) trimProperties(feature, keep);
   }
 
   let note = '';
+
+  // Published hazard data is at survey precision -- far finer than a projector
+  // pixel -- so it is thinned once, here, rather than shipped to every visitor.
+  const simplify = layer.remote?.simplify ?? layer.simplify;
+  if (simplify) {
+    const stats = simplifyFeatures(features, simplify);
+    features = stats.features;
+    geojson.features = features;
+    note = `  simplified: ${stats.before} -> ${stats.after} pts, ${stats.partsBefore} -> ${stats.partsAfter} parts`;
+  }
+
+  for (const feature of features) roundCoords(feature.geometry.coordinates);
 
   if (layer.fill.type === 'buildout') {
     const stats = annotateBuildout(features, layer.fill, `layer "${layer.id}"`);
@@ -154,16 +293,16 @@ async function buildLayer(story, layer, joinTables, SOURCE, OUT) {
   const dest = path.join(OUT, 'layers', `${layer.id}.geojson`);
   await writeFile(dest, JSON.stringify(geojson));
   const after = (await readFile(dest)).byteLength;
-  log(`  ${layer.id.padEnd(14)} ${mb(raw.byteLength).padStart(7)} -> ${mb(after).padStart(7)}${note}`);
+  log(`  ${layer.id.padEnd(18)} ${mb(rawBytes).padStart(7)} -> ${mb(after).padStart(7)}${note}`);
 
   return `stories/${story.id}/layers/${layer.id}.geojson`;
 }
 
 async function buildStory(story) {
-  const SOURCE = path.resolve(sourceOverride ?? story.sourceDir);
+  const SOURCE = path.resolve(sourceOverride ?? story.sourceDir ?? PROJECT_ROOT);
   const OUT = path.join(PROJECT_ROOT, 'public', 'stories', story.id);
 
-  if (!existsSync(SOURCE)) {
+  if (story.sourceDir && !existsSync(SOURCE)) {
     throw new Error(`Assets for "${story.id}" not found at ${SOURCE}. Pass --source <dir>.`);
   }
 
@@ -173,10 +312,12 @@ async function buildStory(story) {
   await mkdir(path.join(OUT, 'data'), { recursive: true });
   await mkdir(path.join(OUT, 'icons'), { recursive: true });
 
-  const baseMap = await buildBaseMap(story, SOURCE, OUT);
+  const baseMap = story.source?.baseMap
+    ? await buildBaseMap(story, SOURCE, OUT)
+    : { image: story.baseMapImage, width: story.baseMapWidth, height: story.baseMapHeight };
 
   const joinTables = new Map();
-  for (const join of story.source.joins ?? []) {
+  for (const join of story.source?.joins ?? []) {
     joinTables.set(join.id, await buildJoinTable(join, SOURCE));
   }
 
@@ -187,14 +328,14 @@ async function buildStory(story) {
   }
 
   log('');
-  for (const source of story.dataSources) {
+  for (const source of story.dataSources ?? []) {
     await copyFile(path.join(SOURCE, source.source), path.join(OUT, 'data', `${source.id}.csv`));
   }
-  log(`  copied ${story.dataSources.length} data series`);
+  log(`  copied ${(story.dataSources ?? []).length} data series`);
 
   let icons = 0;
   for (const layer of story.layers) {
-    if (!layer.icon) continue;
+    if (!layer.icon || layer.remote) continue;
     const src = path.join(SOURCE, layer.icon);
     if (!existsSync(src)) continue;
     await sharp(src)
@@ -214,7 +355,8 @@ async function buildStory(story) {
     baseMap: { ...baseMap, corners: story.corners },
     palette: story.palette,
     seriesOrder: story.seriesOrder,
-    dataSources: story.dataSources.map(({ id, unit, columns }) => ({
+    dial: story.dial,
+    dataSources: (story.dataSources ?? []).map(({ id, unit, columns }) => ({
       id,
       unit,
       columns,
@@ -227,7 +369,7 @@ async function buildStory(story) {
       name: layer.name,
       description: layer.description,
       data: layerPaths.get(layer.id),
-      icon: layer.icon ? `stories/${story.id}/icons/${layer.id}.png` : undefined,
+      icon: layer.icon && !layer.remote ? `stories/${story.id}/icons/${layer.id}.png` : undefined,
       render: layer.render,
       fill: layer.fill,
       color: layer.color,

@@ -1,0 +1,291 @@
+{
+  "id": "oahu-sea-level",
+  "title": "Oahu and the Rising Sea",
+  "subtitle": "Which ground goes under, and which is already a tsunami evacuation zone",
+  "years": {
+    "min": 0,
+    "max": 32
+  },
+  "scenarios": [
+    {
+      "id": "slr-xa",
+      "name": "State exposure area",
+      "description": "Hawai'i Sea Level Rise Vulnerability and Adaptation Report modelling. The 3.2 ft exposure area remains the State's recommended planning layer."
+    }
+  ],
+  "baseMap": {
+    "image": "stories/oahu-sea-level/base-map.webp",
+    "width": 4096,
+    "height": 3171,
+    "corners": [
+      [
+        -158.281,
+        21.71
+      ],
+      [
+        -157.647,
+        21.71
+      ],
+      [
+        -157.647,
+        21.252
+      ],
+      [
+        -158.281,
+        21.252
+      ]
+    ]
+  },
+  "palette": {},
+  "seriesOrder": [],
+  "dial": {
+    "label": "Sea level rise",
+    "scale": 0.1,
+    "decimals": 1,
+    "unit": "ft"
+  },
+  "dataSources": [],
+  "charts": [],
+  "pucks": [
+    {
+      "markerId": 0,
+      "label": "Sea level",
+      "action": {
+        "type": "year",
+        "step": 1
+      },
+      "degreesPerStep": 10,
+      "color": "#45A8E0"
+    },
+    {
+      "markerId": 1,
+      "label": "Layer",
+      "action": {
+        "type": "select-layer"
+      },
+      "degreesPerStep": 30,
+      "color": "#38A6A5"
+    },
+    {
+      "markerId": 2,
+      "label": "Add / Remove",
+      "action": {
+        "type": "toggle-layer"
+      },
+      "degreesPerStep": 45,
+      "color": "#E8A33D"
+    }
+  ],
+  "layers": [
+    {
+      "id": "tsunami-evacuation",
+      "name": "Tsunami Evacuation Zone",
+      "description": "Where to leave during a tsunami warning. This is a hazard Oahu already lives with, mapped independently of sea level rise -- useful as the baseline the rising water is measured against.",
+      "data": "stories/oahu-sea-level/layers/tsunami-evacuation.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#E8A33D",
+      "opacity": 0.35
+    },
+    {
+      "id": "tsunami-extreme",
+      "name": "Extreme Tsunami Evacuation Zone",
+      "description": "The larger zone for a rare, worst-case Aleutian-source event. Roughly twice the area of the standard zone in places.",
+      "data": "stories/oahu-sea-level/layers/tsunami-extreme.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#D2604A",
+      "opacity": 0.3
+    },
+    {
+      "id": "slr-exposure",
+      "name": "Sea Level Rise Exposure",
+      "description": "The State's combined chronic flooding footprint: passive flooding, annual high wave flooding and coastal erosion together. This is the layer Hawai'i plans against.",
+      "data": "stories/oahu-sea-level/layers/slr-exposure.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "threshold",
+        "property": "slr_ft",
+        "dialScale": 0.1,
+        "levels": [
+          {
+            "value": 0.5,
+            "color": "#7FD4F5",
+            "label": "0.5 ft"
+          },
+          {
+            "value": 1.1,
+            "color": "#45A8E0",
+            "label": "1.1 ft"
+          },
+          {
+            "value": 2,
+            "color": "#2C7BC0",
+            "label": "2 ft"
+          },
+          {
+            "value": 3.2,
+            "color": "#1F4E96",
+            "label": "3.2 ft"
+          }
+        ]
+      },
+      "color": "#1F4E96",
+      "opacity": 0.75,
+      "defaultActive": true
+    },
+    {
+      "id": "slr-passive",
+      "name": "Passive Flooding",
+      "description": "Ground simply below the tide line -- water arriving with nothing to stop it. One of the three components of the exposure area.",
+      "data": "stories/oahu-sea-level/layers/slr-passive.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "threshold",
+        "property": "slr_ft",
+        "dialScale": 0.1,
+        "levels": [
+          {
+            "value": 0.5,
+            "color": "#7FD4F5",
+            "label": "0.5 ft"
+          },
+          {
+            "value": 1.1,
+            "color": "#45A8E0",
+            "label": "1.1 ft"
+          },
+          {
+            "value": 2,
+            "color": "#2C7BC0",
+            "label": "2 ft"
+          },
+          {
+            "value": 3.2,
+            "color": "#1F4E96",
+            "label": "3.2 ft"
+          }
+        ]
+      },
+      "color": "#1F4E96",
+      "opacity": 0.75,
+      "defaultActive": false
+    },
+    {
+      "id": "slr-waves",
+      "name": "Annual High Wave Flooding",
+      "description": "Reach of the highest waves in a typical year, on top of the raised sea. This is what puts water well inland of the passive flooding line on exposed coasts.",
+      "data": "stories/oahu-sea-level/layers/slr-waves.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "threshold",
+        "property": "slr_ft",
+        "dialScale": 0.1,
+        "levels": [
+          {
+            "value": 0.5,
+            "color": "#7FD4F5",
+            "label": "0.5 ft"
+          },
+          {
+            "value": 1.1,
+            "color": "#45A8E0",
+            "label": "1.1 ft"
+          },
+          {
+            "value": 2,
+            "color": "#2C7BC0",
+            "label": "2 ft"
+          },
+          {
+            "value": 3.2,
+            "color": "#1F4E96",
+            "label": "3.2 ft"
+          }
+        ]
+      },
+      "color": "#1F4E96",
+      "opacity": 0.75,
+      "defaultActive": false
+    },
+    {
+      "id": "slr-erosion",
+      "name": "Coastal Erosion",
+      "description": "Land projected to be lost to shoreline retreat, not merely flooded. This ground does not come back at low tide.",
+      "data": "stories/oahu-sea-level/layers/slr-erosion.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "threshold",
+        "property": "slr_ft",
+        "dialScale": 0.1,
+        "levels": [
+          {
+            "value": 0.5,
+            "color": "#7FD4F5",
+            "label": "0.5 ft"
+          },
+          {
+            "value": 1.1,
+            "color": "#45A8E0",
+            "label": "1.1 ft"
+          },
+          {
+            "value": 2,
+            "color": "#2C7BC0",
+            "label": "2 ft"
+          },
+          {
+            "value": 3.2,
+            "color": "#1F4E96",
+            "label": "3.2 ft"
+          }
+        ]
+      },
+      "color": "#1F4E96",
+      "opacity": 0.75,
+      "defaultActive": false
+    },
+    {
+      "id": "slr-highways",
+      "name": "Flooded Highways",
+      "description": "State highway segments within the exposure area. Oahu’s coastal highways are single points of failure for whole communities -- losing a segment can cut off far more than it floods.",
+      "data": "stories/oahu-sea-level/layers/slr-highways.geojson",
+      "render": "line",
+      "fill": {
+        "type": "threshold",
+        "property": "slr_ft",
+        "dialScale": 0.1,
+        "levels": [
+          {
+            "value": 0.5,
+            "color": "#7FD4F5",
+            "label": "0.5 ft"
+          },
+          {
+            "value": 1.1,
+            "color": "#45A8E0",
+            "label": "1.1 ft"
+          },
+          {
+            "value": 2,
+            "color": "#2C7BC0",
+            "label": "2 ft"
+          },
+          {
+            "value": 3.2,
+            "color": "#1F4E96",
+            "label": "3.2 ft"
+          }
+        ]
+      },
+      "color": "#F5D04A",
+      "lineWidth": 3,
+      "opacity": 1,
+      "defaultActive": false
+    }
+  ]
+}

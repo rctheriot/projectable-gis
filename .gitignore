@@ -7,3 +7,6 @@ dist/
 
 # Printable marker sheets, regenerate with `npm run markers`
 markers/
+
+# Cached upstream responses for `npm run prepare-story`
+.cache/

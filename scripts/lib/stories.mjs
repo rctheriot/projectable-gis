@@ -6,5 +6,6 @@
  * combined `stories/index.json`, which is what the landing page lists.
  */
 import { oahuEnergy } from './oahu-story.mjs';
+import { oahuSeaLevel } from './oahu-sea-level-story.mjs';
 
-export const STORIES = [oahuEnergy];
+export const STORIES = [oahuEnergy, oahuSeaLevel];

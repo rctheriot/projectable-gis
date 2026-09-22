@@ -51,6 +51,29 @@ export function fillColorExpression(
       ] as unknown as ExpressionSpecification;
     }
 
+    case 'threshold': {
+      const level = year * (fill.dialScale ?? 1);
+      const ascending = [...fill.levels].sort((a, b) => a.value - b.value);
+      const first = ascending[0];
+      if (!first) return TRANSPARENT;
+
+      /*
+       * `step`, not `match`: MapLibre requires match labels to be integers, and
+       * these levels are 0.5, 1.1, 2.0 and 3.2 feet. An invalid expression makes the
+       * whole layer silently fail to paint.
+       */
+      const ramp: unknown[] = ['step', ['to-number', ['get', fill.property], 0], first.color];
+      for (const stop of ascending.slice(1)) ramp.push(stop.value, stop.color);
+
+      // Rounded because the dial holds integer tenths and the data holds decimals.
+      return [
+        'case',
+        ['<=', ['to-number', ['get', fill.property], 1e9], Math.round(level * 1e6) / 1e6],
+        ramp,
+        TRANSPARENT,
+      ] as unknown as ExpressionSpecification;
+    }
+
     case 'joined-choropleth': {
       const key = `y${year}`;
       if (fill.firstYear !== undefined && year < fill.firstYear) return TRANSPARENT;
@@ -97,6 +120,16 @@ export function outlineColorExpression(
         ['==', ['get', EXCLUDED_PROP], 1],
         outline,
         ...built.slice(1),
+      ] as unknown as ExpressionSpecification;
+    }
+
+    case 'threshold': {
+      const level = year * (fill.dialScale ?? 1);
+      return [
+        'case',
+        ['<=', ['to-number', ['get', fill.property], 1e9], Math.round(level * 1e6) / 1e6],
+        outline,
+        TRANSPARENT,
       ] as unknown as ExpressionSpecification;
     }
 

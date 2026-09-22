@@ -24,6 +24,11 @@ interface Props {
    * mode has no physical model to line up with, so the map is navigable.
    */
   interactive?: boolean;
+  /**
+   * Projector alignment, applied on top of the fitted view. Base map and layers
+   * share one camera, so this moves all of them together.
+   */
+  align?: { scale: number; offsetX: number; offsetY: number; rotation: number };
 }
 
 function budgetFor(layer: StoryLayer, loaded: LoadedStory, scenarioId: string, year: number): number {
@@ -32,7 +37,11 @@ function budgetFor(layer: StoryLayer, loaded: LoadedStory, scenarioId: string, y
 
 /** True when a layer's colours depend on the selected year or scenario. */
 function isTimeVarying(layer: StoryLayer): boolean {
-  return layer.render !== 'line' && (layer.fill.type === 'buildout' || layer.fill.type === 'joined-choropleth');
+  return (
+    layer.fill.type === 'buildout' ||
+    layer.fill.type === 'joined-choropleth' ||
+    layer.fill.type === 'threshold'
+  );
 }
 
 /**
@@ -110,6 +119,19 @@ function addStoryLayers(map: MapLibreMap, loaded: LoadedStory, scenarioId: strin
   }
 }
 
+/**
+ * Applies projector alignment on top of the fitted view.
+ *
+ * Scale is a zoom offset (doubling the size is one zoom level), and the offset is
+ * in screen pixels, which is how someone nudging the image against a physical model
+ * actually thinks about it.
+ */
+function applyAlign(map: MapLibreMap, align: Props['align']) {
+  if (!align) return;
+  map.setBearing(align.rotation);
+  if (align.offsetX || align.offsetY) map.panBy([align.offsetX, align.offsetY], { duration: 0 });
+}
+
 /** Recomputes a layer's paint for the current year and scenario. */
 function applyPaint(
   map: MapLibreMap,
@@ -126,21 +148,24 @@ function applyPaint(
   }
 }
 
-export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive = false }: Props) {
+export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive = false, align }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const instanceRef = useRef<{ map: MapLibreMap; storyId: string } | null>(null);
   const teardownRef = useRef<number | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
   const readyRef = useRef(false);
+  /** The fitted view, before any projector alignment. */
+  const baseZoomRef = useRef(0);
+  const baseCentreRef = useRef<{ lng: number; lat: number } | null>(null);
   /** Visible layers whose paint matches the current year. */
   const paintedRef = useRef(new Set<string>());
 
   const { story } = loaded;
 
   // Read current values from asynchronous callbacks without re-running effects.
-  const stateRef = useRef({ year, scenarioId, activeLayerIds });
-  stateRef.current = { year, scenarioId, activeLayerIds };
+  const stateRef = useRef({ year, scenarioId, activeLayerIds, align });
+  stateRef.current = { year, scenarioId, activeLayerIds, align };
 
   // ---- create the map once per story ------------------------------------
   useEffect(() => {
@@ -201,8 +226,12 @@ export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive
 
         addStoryLayers(map, loaded, currentScenario, currentYear, currentActive);
 
-        // Frame the raster: south-west then north-east corner.
+        // Frame the raster: south-west then north-east corner. This is the
+        // reference view; alignment is applied relative to it.
         map.fitBounds([bl, tr], { padding: 24, animate: false });
+        baseZoomRef.current = map.getZoom();
+        baseCentreRef.current = map.getCenter();
+        applyAlign(map, stateRef.current.align);
 
         readyRef.current = true;
         paintedRef.current = new Set(
@@ -227,6 +256,20 @@ export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive
       }, 0);
     };
   }, [story, loaded, interactive]);
+
+  // ---- projector alignment ----------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !align || !baseCentreRef.current) return;
+
+    // Always recompute from the fitted view so nudges do not accumulate.
+    map.jumpTo({
+      center: baseCentreRef.current,
+      zoom: baseZoomRef.current + Math.log2(Math.max(0.05, align.scale)),
+      bearing: align.rotation,
+    });
+    if (align.offsetX || align.offsetY) map.panBy([align.offsetX, align.offsetY], { duration: 0 });
+  }, [align]);
 
   // ---- visibility -------------------------------------------------------
   useEffect(() => {
