@@ -1,0 +1,9 @@
+[
+  {
+    "id": "oahu-energy",
+    "title": "Oahu Energy Goals",
+    "subtitle": "Land, time and trade-offs on the way to 100% renewable by 2045",
+    "coverImage": "stories/oahu-energy/base-map.webp",
+    "path": "stories/oahu-energy/story.json"
+  }
+]

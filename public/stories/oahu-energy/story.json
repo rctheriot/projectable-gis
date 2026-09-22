@@ -1,0 +1,364 @@
+{
+  "id": "oahu-energy",
+  "title": "Oahu Energy Goals",
+  "subtitle": "Land, time and trade-offs on the way to 100% renewable by 2045",
+  "years": {
+    "min": 2016,
+    "max": 2045
+  },
+  "scenarios": [
+    {
+      "id": "postapril",
+      "name": "Post April",
+      "description": "Utility plan as filed after the April revision."
+    },
+    {
+      "id": "e3",
+      "name": "E3",
+      "description": "Consultant projection from E3."
+    },
+    {
+      "id": "e3genmod",
+      "name": "E3 Gen Mod",
+      "description": "E3 projection with generation modelling applied."
+    }
+  ],
+  "baseMap": {
+    "image": "stories/oahu-energy/base-map.webp",
+    "width": 4096,
+    "height": 3171,
+    "corners": [
+      [
+        -158.281,
+        21.71
+      ],
+      [
+        -157.647,
+        21.71
+      ],
+      [
+        -157.647,
+        21.252
+      ],
+      [
+        -158.281,
+        21.252
+      ]
+    ]
+  },
+  "palette": {
+    "Bio": "#3FA97F",
+    "Wind": "#4A86E8",
+    "Fossil": "#D2495B",
+    "PV": "#B58B1B",
+    "Offshore": "#A97BE0",
+    "DER": "#CE7228"
+  },
+  "seriesOrder": [
+    "Bio",
+    "Wind",
+    "Fossil",
+    "PV",
+    "Offshore",
+    "DER"
+  ],
+  "dataSources": [
+    {
+      "id": "capacity",
+      "unit": "MW",
+      "path": "stories/oahu-energy/data/capacity.csv"
+    },
+    {
+      "id": "generation",
+      "unit": "MWh",
+      "path": "stories/oahu-energy/data/generation.csv"
+    },
+    {
+      "id": "curtailment",
+      "unit": "MWh",
+      "path": "stories/oahu-energy/data/curtailment.csv"
+    }
+  ],
+  "charts": [
+    {
+      "id": "generation-mix",
+      "type": "bar",
+      "title": "Generation mix",
+      "source": "generation",
+      "unit": "MWh"
+    }
+  ],
+  "pucks": [
+    {
+      "markerId": 384,
+      "label": "Year",
+      "action": {
+        "type": "year",
+        "step": 1
+      },
+      "degreesPerStep": 15,
+      "color": "#EDAD08"
+    },
+    {
+      "markerId": 6,
+      "label": "Layer",
+      "action": {
+        "type": "select-layer"
+      },
+      "degreesPerStep": 30,
+      "color": "#38A6A5"
+    },
+    {
+      "markerId": 7,
+      "label": "Add / Remove",
+      "action": {
+        "type": "toggle-layer"
+      },
+      "degreesPerStep": 45,
+      "color": "#E17C05"
+    },
+    {
+      "markerId": 11,
+      "label": "Scenario",
+      "action": {
+        "type": "scenario"
+      },
+      "degreesPerStep": 45,
+      "color": "#AC346A"
+    }
+  ],
+  "layers": [
+    {
+      "id": "agriculture",
+      "name": "Agricultural Lands",
+      "description": "The Land Study Bureau's overall productivity rating, Class A (most productive) through Class E. This is the land that renewable buildout competes with.",
+      "data": "stories/oahu-energy/layers/agriculture.geojson",
+      "icon": "stories/oahu-energy/icons/agriculture.png",
+      "render": "fill",
+      "fill": {
+        "type": "categorical",
+        "property": "type",
+        "categories": {
+          "A": "#7DE87D",
+          "B": "#2EDD2E",
+          "C": "#00D100",
+          "D": "#009300",
+          "E": "#005400"
+        },
+        "fallback": "#0F8554"
+      },
+      "color": "#0F8554",
+      "outlineColor": "white",
+      "lineWidth": 0.25
+    },
+    {
+      "id": "parks",
+      "name": "Park Lands",
+      "description": "State and county parks, which are unavailable for energy development.",
+      "data": "stories/oahu-energy/layers/parks.geojson",
+      "icon": "stories/oahu-energy/icons/parks.png",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#994E95",
+      "outlineColor": "white",
+      "lineWidth": 1
+    },
+    {
+      "id": "government",
+      "name": "Government Lands",
+      "description": "Federal, State, County and DHHL land, including the large military holdings in central Oahu.",
+      "data": "stories/oahu-energy/layers/government.geojson",
+      "icon": "stories/oahu-energy/icons/government.png",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#CC503E",
+      "outlineColor": "white",
+      "lineWidth": 1
+    },
+    {
+      "id": "solar",
+      "name": "Utility-Scale Solar",
+      "description": "NREL technical potential for utility-scale solar, filling best-irradiance-first as each year’s PV generation target grows.",
+      "data": "stories/oahu-energy/layers/solar.geojson",
+      "icon": "stories/oahu-energy/icons/solar.png",
+      "render": "fill",
+      "fill": {
+        "type": "buildout",
+        "budget": {
+          "terms": [
+            {
+              "source": "generation",
+              "technologies": [
+                "PV"
+              ]
+            },
+            {
+              "source": "curtailment",
+              "technologies": [
+                "PV"
+              ]
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "property": "cf_1",
+            "direction": "desc"
+          }
+        ],
+        "cost": {
+          "properties": [
+            "cf_1",
+            "capacity"
+          ],
+          "constant": 8760
+        },
+        "unbuiltColor": "rgba(232, 137, 46, 0.16)"
+      },
+      "color": "#E8892E",
+      "lineWidth": 0.2,
+      "buildoutTotal": 9463343.633469954
+    },
+    {
+      "id": "wind",
+      "name": "Wind Energy",
+      "description": "NREL wind technical potential, filling largest-site-first as installed wind capacity grows.",
+      "data": "stories/oahu-energy/layers/wind.geojson",
+      "icon": "stories/oahu-energy/icons/wind.png",
+      "render": "fill",
+      "fill": {
+        "type": "buildout",
+        "budget": {
+          "terms": [
+            {
+              "source": "capacity",
+              "technologies": [
+                "Wind"
+              ]
+            }
+          ],
+          "offset": -99
+        },
+        "sortBy": [
+          {
+            "property": "MWac",
+            "direction": "desc"
+          },
+          {
+            "property": "SPD_CLS",
+            "order": [
+              "8.5+",
+              "7.5-8.5",
+              "6.5-7.5"
+            ]
+          }
+        ],
+        "cost": {
+          "properties": [
+            "MWac"
+          ]
+        },
+        "unbuiltColor": "rgba(42, 82, 190, 0.18)"
+      },
+      "color": "#2A52BE",
+      "lineWidth": 0.2,
+      "buildoutTotal": 226.07080810700285
+    },
+    {
+      "id": "der",
+      "name": "Rooftop Solar Saturation",
+      "description": "Distributed rooftop PV as a share of each neighbourhood group’s hosting capacity. Red areas are approaching saturation.",
+      "data": "stories/oahu-energy/layers/der.geojson",
+      "icon": "stories/oahu-energy/icons/der.png",
+      "render": "fill",
+      "fill": {
+        "type": "joined-choropleth",
+        "join": "derGroupCap",
+        "featureKey": "Building_F",
+        "keyTransform": "after-underscore",
+        "firstYear": 2018,
+        "stops": [
+          {
+            "min": 0.75,
+            "color": "#F5F500"
+          },
+          {
+            "min": 0.675,
+            "color": "#F5DA00"
+          },
+          {
+            "min": 0.6,
+            "color": "#F5BE00"
+          },
+          {
+            "min": 0.525,
+            "color": "#F5A300"
+          },
+          {
+            "min": 0.45,
+            "color": "#F58800"
+          },
+          {
+            "min": 0.375,
+            "color": "#F56D00"
+          },
+          {
+            "min": 0.3,
+            "color": "#F55200"
+          },
+          {
+            "min": 0.15,
+            "color": "#F53600"
+          },
+          {
+            "min": 0.05,
+            "color": "#F51B00"
+          },
+          {
+            "min": 0,
+            "color": "#F50000"
+          }
+        ]
+      },
+      "color": "#E17C05",
+      "outlineColor": "transparent",
+      "lineWidth": 0.1
+    },
+    {
+      "id": "existing-re",
+      "name": "Existing Renewables",
+      "description": "Renewable generation already online today.",
+      "data": "stories/oahu-energy/layers/existing-re.geojson",
+      "icon": "stories/oahu-energy/icons/existing-re.png",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#38A6A5",
+      "outlineColor": "white",
+      "lineWidth": 1
+    },
+    {
+      "id": "transmission",
+      "name": "Transmission Lines",
+      "description": "The high-voltage transmission system. New generation is only useful where it can reach a load centre, so this constrains where buildout can go.",
+      "data": "stories/oahu-energy/layers/transmission.geojson",
+      "icon": "stories/oahu-energy/icons/transmission.png",
+      "render": "line",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#CCFF00",
+      "lineWidth": {
+        "property": "Voltage_kV",
+        "multiplier": 0.04,
+        "minimum": 1
+      },
+      "defaultActive": true
+    }
+  ]
+}

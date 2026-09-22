@@ -16,13 +16,24 @@ the old system and why the rebuild went this way.
 
 ```bash
 npm install
-npm run prepare-story     # one-off: builds the story bundle from the legacy assets
 npm run dev               # http://localhost:4200
 ```
 
-`prepare-story` reads the old Angular assets from
-`../old_projectable_pucks/haven-table-map-angular/src/assets/plans/oahu`. Point it
-elsewhere with `-- --source <dir>`.
+The story bundle in `public/stories/` is **committed**, so a fresh clone runs
+immediately. You do not need the legacy Angular repo to work on the app.
+
+### Rebuilding a story bundle (maintainers only)
+
+```bash
+npm run prepare-story
+```
+
+This regenerates `public/stories/` from the original Angular assets at
+`../old_projectable_pucks/haven-table-map-angular/src/assets/plans/oahu` (override
+with `-- --source <dir>`, or `-- --only <story-id>` for one story). It is a content
+migration step, deliberately **not** part of `npm run build` -- it needs source data
+that is not in this repo and is not available on a CI or hosting build machine.
+Commit whatever it produces.
 
 ### Driving it without a rig
 
@@ -227,6 +238,21 @@ scripts/
   build-story.mjs      asset pipeline
   lib/oahu-story.mjs   the Oahu story definition
 ```
+
+## Deploying (Cloudflare Pages)
+
+| Setting | Value |
+|---|---|
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Node version | from `.nvmrc` (22) |
+
+Nothing else is needed. Vite copies `public/` into `dist/`, so the story bundle
+ships with the build -- `prepare-story` must **not** be in the build command, as it
+depends on source assets that only exist on a maintainer's machine.
+
+The bundle is ~32MB across 22 files, with the largest at ~10MB: comfortably inside
+Cloudflare's 25 MiB per-file and 20,000-file limits.
 
 ## Tests
 
