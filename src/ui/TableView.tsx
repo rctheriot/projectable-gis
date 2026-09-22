@@ -3,6 +3,7 @@ import { CapacityLine } from '@/charts/CapacityLine';
 import { GenerationBars } from '@/charts/GenerationBars';
 import { StoryMap } from '@/map/StoryMap';
 import { usePucks, type SourceKind } from '@/pucks/usePucks';
+import { layoutVars, useSettings } from '@/state/useSettings';
 import { useStore } from '@/state/useStore';
 import type { LoadedStory } from '@/story/loadStory';
 import { CalibrationView } from './CalibrationView';
@@ -14,6 +15,7 @@ interface Props {
   sourceKind: SourceKind;
   websocketUrl: string;
   onClose: () => void;
+  onOpenSettings: () => void;
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
  * The upper half carries the story's chart and readouts, and the map fills the rest
  * of the throw, over the relief model.
  */
-export function TableView({ loaded, sourceKind, websocketUrl, onClose }: Props) {
+export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSettings }: Props) {
   const { story } = loaded;
 
   const year = useStore((s) => s.year);
@@ -38,6 +40,7 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose }: Props) 
   const armedLayer = story.layers[armedLayerIndex];
 
   const [calibrating, setCalibrating] = useState(false);
+  const settings = useSettings();
   const { pucks, status, sourceLabel } = usePucks(story.pucks, sourceKind, websocketUrl);
 
   const readouts = useMemo(
@@ -54,7 +57,7 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose }: Props) 
   if (calibrating) return <CalibrationView onDone={() => setCalibrating(false)} />;
 
   return (
-    <div className="table-view">
+    <div className="table-view" style={layoutVars(settings)}>
       <aside className="rail">
         <div className="rail__top">
           <header className="rail__header">
@@ -114,11 +117,16 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose }: Props) 
         <span>
           {sourceLabel}: {status.detail}
         </span>
-        {sourceKind === 'camera' ? (
-          <button type="button" className="status-bar__action" onClick={() => setCalibrating(true)}>
-            Calibrate
+        <span className="status-bar__actions">
+          {sourceKind === 'camera' ? (
+            <button type="button" className="status-bar__action" onClick={() => setCalibrating(true)}>
+              Calibrate
+            </button>
+          ) : null}
+          <button type="button" className="status-bar__action" onClick={onOpenSettings}>
+            Settings
           </button>
-        ) : null}
+        </span>
       </footer>
     </div>
   );

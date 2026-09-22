@@ -90,6 +90,24 @@ Puck build notes: recess the tag so it sits flush with the table surface (an air
 gap under a diffusing surface defocuses it), and add a detent ring matching the
 puck's `degreesPerStep` so one felt click is exactly one step.
 
+### Settings
+
+A **Settings** page (link on the landing page, and in the table's status bar) holds
+everything that describes the physical installation, persisted to this browser's
+`localStorage` under `projectable.settings.v1`:
+
+- puck input source, camera device, capture resolution, tracker URL
+- puck rail width, layer list width, puck halo size — the rail maps onto a real
+  region of the table, so it is a fixed pixel width tuned once to the rig
+- calibration management: export, import, clear
+
+None of it is in the repository, because the same build runs on a laptop and on the
+table and only the machine knows which camera it has. A `?pucks=` URL parameter
+overrides the saved source for one session.
+
+**Export your calibration.** It lives in browser storage, so clearing site data
+takes it with everything else, and it takes a few minutes to redo.
+
 ### Calibrating
 
 `?pucks=camera` shows a **Calibrate** button in the status bar. Place one puck on

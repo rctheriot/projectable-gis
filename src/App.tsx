@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@/state/useStore';
 import type { SourceKind } from '@/pucks/usePucks';
+import { useSettings } from '@/state/useSettings';
 import { ExploreView } from '@/ui/ExploreView';
 import { Landing, type LaunchMode } from '@/ui/Landing';
+import { SettingsView } from '@/ui/SettingsView';
 import { TableView } from '@/ui/TableView';
 
 /**
@@ -11,12 +13,13 @@ import { TableView } from '@/ui/TableView';
  *   ?pucks=camera                        (the webcam under the table)
  *   ?pucks=websocket&tracker=ws://host:port
  */
-function readSourceConfig(): { kind: SourceKind; websocketUrl: string } {
+function readSourceOverride(): { kind: SourceKind | null; trackerUrl: string | null } {
   const params = new URLSearchParams(window.location.search);
   const requested = params.get('pucks');
-  const kind: SourceKind =
-    requested === 'camera' || requested === 'websocket' ? requested : 'keyboard';
-  return { kind, websocketUrl: params.get('tracker') ?? 'ws://localhost:8765' };
+  return {
+    kind: requested === 'camera' || requested === 'websocket' || requested === 'keyboard' ? requested : null,
+    trackerUrl: params.get('tracker'),
+  };
 }
 
 /**
@@ -47,8 +50,16 @@ export function App() {
   const openStory = useStore((s) => s.openStory);
   const closeStory = useStore((s) => s.closeStory);
 
-  const [config] = useState(readSourceConfig);
+  const [override] = useState(readSourceOverride);
   const [mode, setMode] = useState<LaunchMode>(readMode);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const savedSource = useSettings((s) => s.puckSource);
+  const savedTracker = useSettings((s) => s.trackerUrl);
+
+  // A URL parameter wins for this session; otherwise the rig's saved setting does.
+  const puckSource = override.kind ?? savedSource;
+  const trackerUrl = override.trackerUrl ?? savedTracker;
 
   // Deep links open a story directly: ?story=<id>&mode=table|explore
   useEffect(() => {
@@ -67,6 +78,8 @@ export function App() {
     closeStory();
   };
 
+  if (showSettings) return <SettingsView onDone={() => setShowSettings(false)} />;
+
   if (status === 'loading') {
     return (
       <main className="boot">
@@ -79,14 +92,21 @@ export function App() {
     return mode === 'table' ? (
       <TableView
         loaded={loaded}
-        sourceKind={config.kind}
-        websocketUrl={config.websocketUrl}
+        sourceKind={puckSource}
+        websocketUrl={trackerUrl}
         onClose={close}
+        onOpenSettings={() => setShowSettings(true)}
       />
     ) : (
       <ExploreView loaded={loaded} onClose={close} />
     );
   }
 
-  return <Landing error={error} onOpen={(story, next) => open(story.id, story.path, next)} />;
+  return (
+    <Landing
+      error={error}
+      onOpen={(story, next) => open(story.id, story.path, next)}
+      onOpenSettings={() => setShowSettings(true)}
+    />
+  );
 }

@@ -6,11 +6,12 @@ export type LaunchMode = 'explore' | 'table';
 
 interface Props {
   onOpen: (story: StorySummary, mode: LaunchMode) => void;
+  onOpenSettings: () => void;
   error: string | null;
 }
 
 /** Story picker. New stories appear here automatically from stories/index.json. */
-export function Landing({ onOpen, error }: Props) {
+export function Landing({ onOpen, onOpenSettings, error }: Props) {
   const [stories, setStories] = useState<StorySummary[] | null>(null);
   const [indexError, setIndexError] = useState<string | null>(null);
 
@@ -23,6 +24,9 @@ export function Landing({ onOpen, error }: Props) {
   return (
     <main className="landing">
       <header className="landing__header">
+        <button type="button" className="landing__settings" onClick={onOpenSettings}>
+          Settings
+        </button>
         <p className="landing__eyebrow">Projectable</p>
         <h1 className="landing__title">GIS Stories</h1>
         <p className="landing__lede">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSettings } from '@/state/useSettings';
 import { useStore } from '@/state/useStore';
 import type { PuckBinding } from '@/story/types';
 import { ArucoPuckSource } from './ArucoPuckSource';
@@ -30,16 +31,24 @@ export function usePucks(bindings: PuckBinding[], kind: SourceKind, websocketUrl
   const [pucks, setPucks] = useState<PuckState[]>([]);
   const [status, setStatus] = useState({ connected: false, detail: 'starting' });
 
+  const cameraDeviceId = useSettings((s) => s.cameraDeviceId);
+  const cameraWidth = useSettings((s) => s.cameraWidth);
+  const cameraHeight = useSettings((s) => s.cameraHeight);
+
   const source = useMemo<PuckSource>(() => {
     switch (kind) {
       case 'camera':
-        return new ArucoPuckSource();
+        return new ArucoPuckSource({
+          deviceId: cameraDeviceId || undefined,
+          width: cameraWidth,
+          height: cameraHeight,
+        });
       case 'websocket':
         return new WebSocketPuckSource(websocketUrl);
       default:
         return new KeyboardPuckSource(bindings);
     }
-  }, [kind, websocketUrl, bindings]);
+  }, [kind, websocketUrl, bindings, cameraDeviceId, cameraWidth, cameraHeight]);
 
   // Rotation state is per marker and must survive re-renders.
   const rotationsRef = useRef(new Map<number, RotationAccumulator>());

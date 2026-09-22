@@ -36,6 +36,7 @@
    */
   --rail-width: 1120px;
   --legend-width: 260px;
+  --puck-size: 120px;
   --radius: 10px;
   --shadow: 0 18px 48px rgb(0 0 0 / 55%);
 
@@ -78,6 +79,23 @@ button { font: inherit; color: inherit; }
   overflow-y: auto;
   padding: clamp(2rem, 6vh, 5rem) clamp(1rem, 6vw, 6rem);
 }
+
+.landing__header { position: relative; }
+
+.landing__settings {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font-size: 0.85em;
+}
+
+.landing__settings:hover { border-color: var(--accent); color: var(--ink); }
 
 .landing__eyebrow {
   margin: 0 0 0.5rem;
@@ -602,7 +620,7 @@ button { font: inherit; color: inherit; }
   position: absolute;
   display: grid;
   place-items: center;
-  width: clamp(6rem, 8.5vw, 9.5rem);
+  width: var(--puck-size);
   aspect-ratio: 1;
   border: 3px solid currentcolor;
   border-radius: 50%;
@@ -662,8 +680,9 @@ button { font: inherit; color: inherit; }
 .status-bar__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #8a5a2a; }
 .status-bar__dot.is-connected { background: #3fa97f; }
 
+.status-bar__actions { display: flex; gap: 0.4rem; margin-left: auto; }
+
 .status-bar__action {
-  margin-left: auto;
   padding: 0.1rem 0.6rem;
   border: 1px solid var(--border-strong);
   border-radius: 5px;
@@ -767,3 +786,85 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0.01ms !important; }
 }
+
+/* -------------------------------------------------------------- settings */
+
+.settings {
+  height: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vh, 3rem) 1.5rem 4rem;
+  overflow-y: auto;
+}
+
+.settings__header { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 2rem; }
+.settings__title { margin: 0; font-size: 2em; font-weight: 300; letter-spacing: -0.02em; }
+.settings__lede { margin: 0; max-width: 46ch; color: var(--ink-secondary); }
+
+.settings__section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 1.3rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.settings__sectionTitle {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.settings__row { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.settings__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.settings__note { margin: 0; max-width: 60ch; color: var(--ink-muted); font-size: 0.85em; }
+
+.settings__message {
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 0.9em;
+}
+
+.settings__choices { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+
+.choice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.choice:hover { border-color: var(--border-strong); }
+.choice.is-selected { border-color: var(--accent); background: var(--surface-raised); }
+.choice input { grid-row: span 2; align-self: center; accent-color: var(--accent); }
+.choice__label { font-weight: 500; }
+.choice__hint { color: var(--ink-muted); font-size: 0.85em; }
+
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.field__label { color: var(--ink-muted); font-size: 0.8em; }
+
+.field__input {
+  min-width: 9rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95em;
+}
+
+.field__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* `label.button` wraps a hidden file input, so it needs the button's box. */
+label.button { display: inline-flex; align-items: center; }

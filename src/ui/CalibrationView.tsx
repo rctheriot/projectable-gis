@@ -3,6 +3,7 @@ import { ArucoPuckSource } from '@/pucks/ArucoPuckSource';
 import { CALIBRATION_TARGETS, clearCalibration, saveCalibration } from '@/pucks/calibration';
 import { applyHomography, computeHomography, type Correspondence } from '@/pucks/homography';
 import type { PuckFrame, PuckReading } from '@/pucks/types';
+import { useSettings } from '@/state/useSettings';
 
 interface Props {
   onDone: () => void;
@@ -20,7 +21,13 @@ interface Props {
  * hand and the residual error was corrected with arrow keys every session.
  */
 export function CalibrationView({ onDone }: Props) {
-  const source = useMemo(() => new ArucoPuckSource(), []);
+  const deviceId = useSettings((s) => s.cameraDeviceId);
+  const width = useSettings((s) => s.cameraWidth);
+  const height = useSettings((s) => s.cameraHeight);
+  const source = useMemo(
+    () => new ArucoPuckSource({ deviceId: deviceId || undefined, width, height }),
+    [deviceId, width, height],
+  );
   const [markers, setMarkers] = useState<PuckReading[]>([]);
   const [captured, setCaptured] = useState<Correspondence[]>([]);
   const [status, setStatus] = useState({ connected: false, detail: 'starting camera' });
