@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { loadStoryIndex } from '@/story/loadStory';
 import type { StorySummary } from '@/story/types';
 
+export type LaunchMode = 'explore' | 'table';
+
 interface Props {
-  onOpen: (story: StorySummary) => void;
+  onOpen: (story: StorySummary, mode: LaunchMode) => void;
   error: string | null;
 }
 
@@ -21,11 +23,11 @@ export function Landing({ onOpen, error }: Props) {
   return (
     <main className="landing">
       <header className="landing__header">
-        <p className="landing__eyebrow">Projectable Pucks</p>
+        <p className="landing__eyebrow">Projectable</p>
         <h1 className="landing__title">GIS Stories</h1>
         <p className="landing__lede">
-          Pick a story to project onto the table. Turn the pucks to move through time, switch scenarios
-          and bring layers in and out.
+          Each story can be explored here in the browser, or projected onto the table and driven with
+          physical pucks.
         </p>
       </header>
 
@@ -38,13 +40,23 @@ export function Landing({ onOpen, error }: Props) {
 
       <div className="landing__grid">
         {stories?.map((story) => (
-          <button key={story.id} type="button" className="story-card" onClick={() => onOpen(story)}>
+          <article key={story.id} className="story-card">
             {story.coverImage ? <img className="story-card__image" src={story.coverImage} alt="" /> : null}
-            <span className="story-card__body">
-              <span className="story-card__title">{story.title}</span>
-              {story.subtitle ? <span className="story-card__subtitle">{story.subtitle}</span> : null}
-            </span>
-          </button>
+            <div className="story-card__body">
+              <h2 className="story-card__title">{story.title}</h2>
+              {story.subtitle ? <p className="story-card__subtitle">{story.subtitle}</p> : null}
+
+              <div className="story-card__actions">
+                {/* Explore is first and primary: most people opening this link have no table. */}
+                <button type="button" className="button button--primary" onClick={() => onOpen(story, 'explore')}>
+                  Explore
+                </button>
+                <button type="button" className="button" onClick={() => onOpen(story, 'table')}>
+                  Projection table
+                </button>
+              </div>
+            </div>
+          </article>
         ))}
         {stories?.length === 0 ? (
           <p className="landing__error">

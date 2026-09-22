@@ -90,7 +90,7 @@
   ],
   "pucks": [
     {
-      "markerId": 384,
+      "markerId": 0,
       "label": "Year",
       "action": {
         "type": "year",
@@ -100,7 +100,7 @@
       "color": "#EDAD08"
     },
     {
-      "markerId": 6,
+      "markerId": 1,
       "label": "Layer",
       "action": {
         "type": "select-layer"
@@ -109,7 +109,7 @@
       "color": "#38A6A5"
     },
     {
-      "markerId": 7,
+      "markerId": 2,
       "label": "Add / Remove",
       "action": {
         "type": "toggle-layer"
@@ -118,7 +118,7 @@
       "color": "#E17C05"
     },
     {
-      "markerId": 11,
+      "markerId": 3,
       "label": "Scenario",
       "action": {
         "type": "scenario"

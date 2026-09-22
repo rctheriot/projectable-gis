@@ -11,10 +11,12 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare-story": "node scripts/build-story.mjs"
+    "prepare-story": "node scripts/build-story.mjs",
+    "markers": "node scripts/generate-markers.mjs"
   },
   "dependencies": {
     "d3-dsv": "^3.0.1",
+    "js-aruco2": "^2.0.0",
     "maplibre-gl": "^5.9.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

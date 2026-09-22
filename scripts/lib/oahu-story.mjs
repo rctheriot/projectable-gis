@@ -101,14 +101,21 @@ const STORY = {
   ],
 
   /**
-   * Puck bindings. `degreesPerStep` should match the printed detent ring on the
-   * physical puck, so one felt click equals exactly one step.
+   * Puck bindings.
+   *
+   * `markerId` indexes the ARUCO_MIP_36h12 dictionary (0-249). Print the markers
+   * with `npm run markers`. The legacy ids (384, 6, 7, 11) were for the original
+   * ARUCO dictionary; 384 does not exist in 36h12, which has far better false
+   * positive rejection and is worth the reprint.
+   *
+   * `degreesPerStep` should match the printed detent ring on the physical puck, so
+   * one felt click equals exactly one step.
    */
   pucks: [
-    { markerId: 384, label: 'Year', action: { type: 'year', step: 1 }, degreesPerStep: 15, color: '#EDAD08' },
-    { markerId: 6, label: 'Layer', action: { type: 'select-layer' }, degreesPerStep: 30, color: '#38A6A5' },
-    { markerId: 7, label: 'Add / Remove', action: { type: 'toggle-layer' }, degreesPerStep: 45, color: '#E17C05' },
-    { markerId: 11, label: 'Scenario', action: { type: 'scenario' }, degreesPerStep: 45, color: '#AC346A' },
+    { markerId: 0, label: 'Year', action: { type: 'year', step: 1 }, degreesPerStep: 15, color: '#EDAD08' },
+    { markerId: 1, label: 'Layer', action: { type: 'select-layer' }, degreesPerStep: 30, color: '#38A6A5' },
+    { markerId: 2, label: 'Add / Remove', action: { type: 'toggle-layer' }, degreesPerStep: 45, color: '#E17C05' },
+    { markerId: 3, label: 'Scenario', action: { type: 'scenario' }, degreesPerStep: 45, color: '#AC346A' },
   ],
 };
 

@@ -120,18 +120,13 @@ button { font: inherit; color: inherit; }
 .story-card {
   display: flex;
   flex-direction: column;
-  padding: 0;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-raised);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 140ms ease, transform 140ms ease;
 }
 
-.story-card:hover,
-.story-card:focus-visible { border-color: var(--accent); transform: translateY(-2px); }
+.story-card:hover { border-color: var(--border-strong); }
 
 .story-card__image {
   width: 100%;
@@ -140,13 +135,199 @@ button { font: inherit; color: inherit; }
   background: var(--surface-sunken);
 }
 
-.story-card__body { display: block; padding: 1.1rem 1.25rem 1.35rem; }
-.story-card__title { display: block; font-size: 1.25em; font-weight: 500; }
-.story-card__subtitle { display: block; margin-top: 0.35rem; color: var(--ink-secondary); font-size: 0.92em; }
+.story-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.story-card__title { margin: 0; font-size: 1.25em; font-weight: 500; }
+.story-card__subtitle { margin: 0; color: var(--ink-secondary); font-size: 0.92em; }
+.story-card__actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.9rem; }
+
+.button {
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+
+.button:hover { border-color: var(--accent); color: var(--ink); }
+
+.button--primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #06111f;
+  font-weight: 500;
+}
+
+.button--primary:hover { background: #6b9dee; color: #06111f; }
+
+/* ------------------------------------------------------------ explore mode */
+
+/*
+ * The browser version of a story. Unlike the table, nothing here maps onto a
+ * physical object, so the layout is proportional and reflows.
+ */
+.explore {
+  display: grid;
+  grid-template-columns: clamp(17rem, 24vw, 23rem) 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    'header header'
+    'panel  map'
+    'panel  timeline';
+  height: 100%;
+}
+
+.explore__header {
+  grid-area: header;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.explore__titles { display: flex; flex-direction: column; gap: 0.15rem; }
+
+.explore__back {
+  align-self: flex-start;
+  padding: 0 0.6rem 0.15rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 0.82em;
+}
+
+.explore__back:hover { color: var(--ink); }
+.explore__title { margin: 0; font-size: 1.5em; font-weight: 500; letter-spacing: -0.01em; }
+.explore__subtitle { margin: 0; color: var(--ink-secondary); font-size: 0.9em; }
+
+.explore__panel {
+  grid-area: panel;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  min-height: 0;
+  padding: 1.2rem 1.1rem;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+
+.explore__section { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.explore__sectionTitle {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.explore .story-map { grid-area: map; }
+
+/* Scenario switch */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-raised);
+}
+
+.segmented__option {
+  padding: 0.4rem 0.85rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 0.88em;
+  white-space: nowrap;
+}
+
+.segmented__option:hover { color: var(--ink); }
+.segmented__option.is-selected { background: var(--accent); color: #06111f; font-weight: 500; }
+
+/* Year scrubber */
+.timeline {
+  grid-area: timeline;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 1.4rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.timeline__play {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.7em;
+  line-height: 1;
+}
+
+.timeline__play:hover { border-color: var(--accent); }
+
+.timeline__year {
+  min-width: 3.6ch;
+  font-size: 1.3em;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline__slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.timeline__bounds { color: var(--ink-muted); font-size: 0.8em; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 860px) {
+  .explore {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 45vh auto 1fr;
+    grid-template-areas:
+      'header'
+      'map'
+      'timeline'
+      'panel';
+    height: auto;
+    min-height: 100%;
+  }
+  .explore__panel { border-right: 0; border-top: 1px solid var(--border); overflow: visible; }
+  body { overflow: auto; }
+}
 
 /* ------------------------------------------------------------ table view */
 
+/*
+ * Table mode is pure black, everywhere.
+ *
+ * The projector is LED: black means it emits no light at all, so any part of the
+ * table that does not need to be lit stays dark and the physical model is not
+ * washed out by a glowing panel background. Panels are defined by their borders and
+ * their text, never by a filled surface.
+ */
 .table-view {
+  --surface: #000;
+  --surface-raised: #000;
+  --surface-sunken: #000;
+
   display: grid;
   /* Never wider than the viewport allows, so a laptop can still show the map. */
   grid-template-columns: min(var(--rail-width), 46vw) 1fr;
@@ -249,10 +430,8 @@ button { font: inherit; color: inherit; }
   grid-area: pucks;
   position: relative;
   border-top: 1px dashed var(--border-strong);
-  /* A faint field so operators can see where pucks belong, even with none down. */
-  background:
-    radial-gradient(circle at 50% 45%, rgb(74 134 232 / 7%), transparent 70%),
-    var(--surface-sunken);
+  /* Unlit: the pucks and their halos are the only thing the projector puts here. */
+  background: #000;
   overflow: hidden;
 }
 
@@ -363,6 +542,9 @@ button { font: inherit; color: inherit; }
   background: var(--surface-raised);
 }
 
+/* A marker's surface ring has to match whatever it sits on. */
+.table-view .chart__marker { stroke: #000; }
+
 .chart__title {
   display: flex;
   justify-content: space-between;
@@ -424,7 +606,8 @@ button { font: inherit; color: inherit; }
   aspect-ratio: 1;
   border: 3px solid currentcolor;
   border-radius: 50%;
-  background: rgb(5 8 15 / 55%);
+  /* No fill: the ring and the label are all the light this needs to emit. */
+  background: transparent;
   box-shadow: var(--shadow);
   /* Movement is a transform only, so a sliding puck never triggers layout. */
   will-change: transform;
@@ -471,13 +654,102 @@ button { font: inherit; color: inherit; }
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.9rem;
-  background: rgb(5 8 15 / 80%);
+  background: transparent;
   color: var(--ink-muted);
   font-size: 0.75em;
 }
 
 .status-bar__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #8a5a2a; }
 .status-bar__dot.is-connected { background: #3fa97f; }
+
+.status-bar__action {
+  margin-left: auto;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.status-bar__action:hover { border-color: var(--accent); color: var(--ink); }
+
+/* ----------------------------------------------------------- calibration */
+
+.calibration {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr minmax(20rem, 28rem);
+  height: 100%;
+  background: #000;
+}
+
+/* The targets are projected onto the table surface; a puck goes on the lit one. */
+.calibration__field { position: relative; }
+
+.calibration__target {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 2px solid #2b3546;
+  border-radius: 50%;
+  color: #2b3546;
+  transform: translate(-50%, -50%);
+}
+
+/* A crosshair is easier to centre a puck on than a filled shape. */
+.calibration__target::before,
+.calibration__target::after {
+  content: '';
+  position: absolute;
+  background: currentcolor;
+}
+
+.calibration__target::before { width: 1px; height: 100%; }
+.calibration__target::after { width: 100%; height: 1px; }
+
+.calibration__target.is-current {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 6px rgb(74 134 232 / 15%);
+}
+
+.calibration__target.is-done { border-color: #3fa97f; color: #3fa97f; }
+
+.calibration__targetIndex {
+  position: relative;
+  padding: 0 0.25rem;
+  background: #000;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.calibration__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 2rem 1.6rem;
+  border-left: 1px solid var(--border);
+}
+
+.calibration__title { margin: 0; font-size: 1.5em; font-weight: 500; }
+.calibration__step { margin: 0; color: var(--ink-secondary); }
+.calibration__seen { margin: 0; color: var(--ink-muted); font-size: 0.9em; }
+.calibration__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+
+.calibration__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: auto 0 0;
+  color: var(--ink-muted);
+  font-size: 0.8em;
+}
+
+.button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Smaller screens (a laptop during development) stack the rails over the map. */
 @media (max-width: 1100px) {

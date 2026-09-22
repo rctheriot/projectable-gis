@@ -18,6 +18,12 @@ interface Props {
   year: number;
   scenarioId: string;
   activeLayerIds: Set<string>;
+  /**
+   * Table mode locks the camera: the projector and the relief model are fixed
+   * relative to each other, so any pan or zoom breaks the registration. Explore
+   * mode has no physical model to line up with, so the map is navigable.
+   */
+  interactive?: boolean;
 }
 
 function budgetFor(layer: StoryLayer, loaded: LoadedStory, scenarioId: string, year: number): number {
@@ -44,7 +50,9 @@ function initialStyle(): StyleSpecification {
   return {
     version: 8,
     sources: {},
-    layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#05080f' } }],
+    // Pure black: on the table this is an LED projector, so the ocean around the
+    // island emits no light and the physical model is not washed out.
+    layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#000000' } }],
   };
 }
 
@@ -118,7 +126,7 @@ function applyPaint(
   }
 }
 
-export function StoryMap({ loaded, year, scenarioId, activeLayerIds }: Props) {
+export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const instanceRef = useRef<{ map: MapLibreMap; storyId: string } | null>(null);
@@ -163,9 +171,7 @@ export function StoryMap({ loaded, year, scenarioId, activeLayerIds }: Props) {
       const map = new maplibregl.Map({
         container,
         style: initialStyle(),
-        // The projector and the table are fixed relative to each other, so the
-        // camera never moves during a session.
-        interactive: false,
+        interactive,
         attributionControl: false,
         fadeDuration: 0,
       });
@@ -220,7 +226,7 @@ export function StoryMap({ loaded, year, scenarioId, activeLayerIds }: Props) {
         teardownRef.current = null;
       }, 0);
     };
-  }, [story, loaded]);
+  }, [story, loaded, interactive]);
 
   // ---- visibility -------------------------------------------------------
   useEffect(() => {

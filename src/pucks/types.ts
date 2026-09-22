@@ -10,6 +10,14 @@ export interface PuckReading {
   confidence: number;
   /** performance.now() when the frame was captured. */
   t: number;
+  /**
+   * Where the marker was in the camera image, in pixels, plus the frame size.
+   *
+   * Present only for camera-based sources. Calibration needs the raw pixels to
+   * solve a homography, and the diagnostics overlay uses them to show what the
+   * camera is actually seeing.
+   */
+  camera?: { x: number; y: number; width: number; height: number };
 }
 
 /** A frame: every puck currently visible. Pucks not listed are considered lifted. */

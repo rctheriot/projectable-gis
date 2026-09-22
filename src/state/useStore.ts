@@ -20,7 +20,9 @@ interface StoreState {
   closeStory: () => void;
 
   stepYear: (delta: number) => void;
+  setYear: (year: number) => void;
   stepScenario: (delta: number) => void;
+  setScenarioIndex: (index: number) => void;
   stepArmedLayer: (delta: number) => void;
   toggleArmedLayer: () => void;
   setLayerActive: (id: string, active: boolean) => void;
@@ -65,6 +67,20 @@ export const useStore = create<StoreState>((set, get) => ({
     if (min === max) return; // Single-year story: the year puck is a no-op.
     const next = clamp(year + delta, min, max);
     if (next !== year) set({ year: next });
+  },
+
+  /** Absolute year, for the explore-mode slider. Pucks only ever step. */
+  setYear: (year) => {
+    const { loaded } = get();
+    if (!loaded) return;
+    const { min, max } = loaded.story.years;
+    set({ year: clamp(Math.round(year), min, max) });
+  },
+
+  setScenarioIndex: (index) => {
+    const { loaded } = get();
+    if (!loaded) return;
+    set({ scenarioIndex: wrap(index, loaded.story.scenarios.length) });
   },
 
   stepScenario: (delta) => {

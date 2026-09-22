@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { CapacityLine } from '@/charts/CapacityLine';
 import { GenerationBars } from '@/charts/GenerationBars';
 import { StoryMap } from '@/map/StoryMap';
 import { usePucks, type SourceKind } from '@/pucks/usePucks';
 import { useStore } from '@/state/useStore';
 import type { LoadedStory } from '@/story/loadStory';
+import { CalibrationView } from './CalibrationView';
 import { Legend } from './Legend';
 import { PuckOverlay } from './PuckOverlay';
 
@@ -36,6 +37,7 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose }: Props) 
   const scenario = story.scenarios[scenarioIndex] ?? story.scenarios[0];
   const armedLayer = story.layers[armedLayerIndex];
 
+  const [calibrating, setCalibrating] = useState(false);
   const { pucks, status, sourceLabel } = usePucks(story.pucks, sourceKind, websocketUrl);
 
   const readouts = useMemo(
@@ -47,6 +49,9 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose }: Props) 
     }),
     [year, scenario, armedLayer, activeLayerIds],
   );
+
+  // Calibration needs the camera to itself, so it replaces the view entirely.
+  if (calibrating) return <CalibrationView onDone={() => setCalibrating(false)} />;
 
   return (
     <div className="table-view">
@@ -109,6 +114,11 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose }: Props) 
         <span>
           {sourceLabel}: {status.detail}
         </span>
+        {sourceKind === 'camera' ? (
+          <button type="button" className="status-bar__action" onClick={() => setCalibrating(true)}>
+            Calibrate
+          </button>
+        ) : null}
       </footer>
     </div>
   );

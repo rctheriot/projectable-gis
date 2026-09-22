@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/state/useStore';
 import type { PuckBinding } from '@/story/types';
+import { ArucoPuckSource } from './ArucoPuckSource';
 import { KeyboardPuckSource } from './KeyboardPuckSource';
 import { WebSocketPuckSource } from './WebSocketPuckSource';
 import { RotationAccumulator } from './rotation';
 import type { PuckFrame, PuckReading, PuckSource } from './types';
 
-export type SourceKind = 'keyboard' | 'websocket';
+export type SourceKind = 'keyboard' | 'camera' | 'websocket';
 
 /** Readings below this are treated as noise. */
 const MIN_CONFIDENCE = 0.5;
@@ -29,10 +30,16 @@ export function usePucks(bindings: PuckBinding[], kind: SourceKind, websocketUrl
   const [pucks, setPucks] = useState<PuckState[]>([]);
   const [status, setStatus] = useState({ connected: false, detail: 'starting' });
 
-  const source = useMemo<PuckSource>(
-    () => (kind === 'websocket' ? new WebSocketPuckSource(websocketUrl) : new KeyboardPuckSource(bindings)),
-    [kind, websocketUrl, bindings],
-  );
+  const source = useMemo<PuckSource>(() => {
+    switch (kind) {
+      case 'camera':
+        return new ArucoPuckSource();
+      case 'websocket':
+        return new WebSocketPuckSource(websocketUrl);
+      default:
+        return new KeyboardPuckSource(bindings);
+    }
+  }, [kind, websocketUrl, bindings]);
 
   // Rotation state is per marker and must survive re-renders.
   const rotationsRef = useRef(new Map<number, RotationAccumulator>());

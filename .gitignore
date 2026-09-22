@@ -4,3 +4,6 @@ dist/
 
 # macOS
 .DS_Store
+
+# Printable marker sheets, regenerate with `npm run markers`
+markers/

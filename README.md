@@ -35,6 +35,17 @@ migration step, deliberately **not** part of `npm run build` -- it needs source 
 that is not in this repo and is not available on a CI or hosting build machine.
 Commit whatever it produces.
 
+### Two ways to open a story
+
+Every story launches either way, from the landing page or by URL:
+
+| Mode | URL | What it is |
+|---|---|---|
+| **Explore** (default) | `?story=<id>` | An ordinary website: navigable map, year slider with playback, scenario switch, layer toggles, reflows on a phone |
+| **Projection table** | `?story=<id>&mode=table` | The rig: fixed-pixel puck rail, locked camera, pure black, driven by pucks |
+
+Explore is the default because most people opening a shared link have no table.
+
 ### Driving it without a rig
 
 The table runs from the keyboard so you can build and demo away from the hardware:
@@ -50,9 +61,45 @@ Layers can also just be clicked in the legend.
 ### Running on the table
 
 ```
-?story=oahu-energy                                  skip the story picker
-?pucks=websocket&tracker=ws://localhost:8765        read pucks from an external tracker
+?story=oahu-energy&mode=table                   the table layout
+?story=oahu-energy&mode=table&pucks=camera      read pucks from the webcam
+?pucks=websocket&tracker=ws://host:port         read pucks from an external tracker
 ```
+
+Table mode renders on **pure black**. The projector is LED, so black emits no
+light: anywhere the story does not need to light up, the physical model stays
+unlit rather than being washed out by a glowing panel.
+
+### Pucks and markers
+
+One webcam under the table reads fiducials on the underside of each puck.
+Detection uses **ARUCO_MIP_36h12** (36 bits, minimum Hamming distance 12) — far
+better at rejecting false positives than the original ARUCO dictionary the old app
+used, which is worth a reprint.
+
+```bash
+npm run markers           # writes markers/<story>/<id>-<label>.svg at true size
+npm run markers -- --size 60
+```
+
+Print at **100% scale** on **matte** stock — gloss throws the projector's light
+straight back into the camera. The dashed line is the cut line; the quiet zone
+around the marker is part of the tag and must survive the cut.
+
+Puck build notes: recess the tag so it sits flush with the table surface (an air
+gap under a diffusing surface defocuses it), and add a detent ring matching the
+puck's `degreesPerStep` so one felt click is exactly one step.
+
+### Calibrating
+
+`?pucks=camera` shows a **Calibrate** button in the status bar. Place one puck on
+each projected target in turn and capture it; five points solve a least-squares
+homography from camera pixels to table coordinates, stored in `localStorage`. The
+screen reports the worst fit error — above ~2% of table width, start over.
+
+This replaces hand-editing six points into a source file and nudging the residual
+error with arrow keys every session. `docs/legacy-table-calibration.md` keeps the
+old rig's numbers for reference.
 
 ---
 
@@ -131,11 +178,20 @@ twice — fast turns lost steps, slow turns fired twice. Rotation is now integra
 so a fast 90° flick and a slow one emit the same number of steps, and the remainder
 stays banked.
 
-**Two cameras, one coordinate frame.** `computeHomography` (`src/pucks/homography.ts`)
-models perspective and solves a least-squares fit from four or more points. The old
-tracker interpolated linearly between six points per camera, assuming no lens
+**Detection moved off the main thread and up to full resolution.** The old detector
+ran inline in a `requestAnimationFrame` loop against a **400x400** canvas — starved
+of pixels and stalling the UI every frame. It now runs in a worker at the camera's
+native resolution.
+
+**Perspective is modelled, not approximated.** `computeHomography`
+(`src/pucks/homography.ts`) solves a least-squares fit from four or more points. The
+old tracker interpolated linearly between six points per camera, assuming no lens
 distortion and a perfectly square mount, and needed live arrow-key offset nudging
-plus an anti-flicker hack to stop the cameras fighting over a marker.
+plus an anti-flicker hack to stop two cameras fighting over a marker. The rig now
+uses a single camera, so that whole class of problem is gone.
+
+**Rotation is measured in table space.** Corners are mapped through the homography
+before the angle is taken, so a tilted camera no longer tilts every puck reading.
 
 **Data races.** A story now loads all of its CSVs before first paint. Previously
 each chart kicked off its own load, and the solar layer read generation data that
@@ -264,19 +320,16 @@ Covers the buildout prefix-sum and comparator, the homography solver, and the
 rotation integrator — the three places where a silent error would be invisible on
 the table.
 
-## Next: replacing the camera pipeline
+## Swapping in an external tracker
 
-`WebSocketPuckSource` is the seam. A tracker process should send frames of
-table-space readings:
+The browser detector is enough for the rig. If detection ever needs to move to a
+dedicated process (a depth camera, an AprilTag detector, better optics),
+`WebSocketPuckSource` is the seam — it expects frames of table-space readings:
 
 ```json
 { "t": 12345.6,
   "pucks": [ { "markerId": 384, "x": 0.42, "y": 0.71, "angle": 137.2, "confidence": 0.98 } ] }
 ```
 
-`x`/`y` are normalised `[0,1]` across the projected surface. Recommended: AprilTag
-`tag36h11`, detected at native camera resolution, with ChArUco-derived intrinsics
-and a per-camera homography into the shared table frame.
-
-Puck hardware: recess the tag flush with the contact surface, print matte, and add a
-detent ring matching `degreesPerStep` so one felt click is exactly one step.
+`x`/`y` are normalised `[0,1]` across the puck area. Point the app at it with
+`?pucks=websocket&tracker=ws://host:port`.
