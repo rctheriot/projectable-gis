@@ -1,0 +1,121 @@
+import type { ExpressionSpecification, DataDrivenPropertyValueSpecification } from 'maplibre-gl';
+import type { StoryLayer } from '@/story/types';
+
+/** Written by the build script: exclusive prefix sum of buildout cost. */
+export const CUM_PROP = '_cum';
+/** Written by the build script: 1 for features held out of the buildout. */
+export const EXCLUDED_PROP = '_ex';
+
+const TRANSPARENT = 'rgba(0,0,0,0)';
+
+export const fillLayerId = (layer: StoryLayer) => `${layer.id}__fill`;
+export const outlineLayerId = (layer: StoryLayer) => `${layer.id}__outline`;
+export const sourceId = (layer: StoryLayer) => `${layer.id}__source`;
+
+/**
+ * Builds the fill-colour expression for a layer.
+ *
+ * `budget` and `year` are the only runtime inputs, and both collapse to scalars
+ * inside the expression. Changing the year therefore costs one
+ * `setPaintProperty` call, not a pass over 10,000 features.
+ */
+export function fillColorExpression(
+  layer: StoryLayer,
+  budget: number,
+  year: number,
+): DataDrivenPropertyValueSpecification<string> {
+  const fill = layer.fill;
+
+  switch (fill.type) {
+    case 'static':
+      return layer.color;
+
+    case 'categorical': {
+      const match: unknown[] = ['match', ['to-string', ['get', fill.property]]];
+      for (const [value, color] of Object.entries(fill.categories)) match.push(value, color);
+      match.push(fill.fallback ?? layer.color);
+      return match as unknown as ExpressionSpecification;
+    }
+
+    case 'buildout': {
+      // Built when the budget remaining *before* paying for this feature is still
+      // positive -- hence `<` against an exclusive prefix sum.
+      const unbuilt = fill.unbuiltColor ?? TRANSPARENT;
+      const built: unknown[] = ['case', ['<', ['get', CUM_PROP], budget], layer.color, unbuilt];
+      if (!fill.exclude) return built as unknown as ExpressionSpecification;
+      return [
+        'case',
+        ['==', ['get', EXCLUDED_PROP], 1],
+        fill.excludedColor ?? layer.color,
+        ...built.slice(1),
+      ] as unknown as ExpressionSpecification;
+    }
+
+    case 'joined-choropleth': {
+      const key = `y${year}`;
+      if (fill.firstYear !== undefined && year < fill.firstYear) return TRANSPARENT;
+
+      const ascending = [...fill.stops].sort((a, b) => a.min - b.min);
+      const first = ascending[0];
+      if (!first) return layer.color;
+
+      const step: unknown[] = ['step', ['to-number', ['get', key]], first.color];
+      for (const stop of ascending.slice(1)) step.push(stop.min, stop.color);
+
+      // Features with no value for this year render nothing at all.
+      return ['case', ['has', key], step, TRANSPARENT] as unknown as ExpressionSpecification;
+    }
+  }
+}
+
+/**
+ * Outline colour for a fill layer.
+ *
+ * The outline has to follow the same rule as the fill: an unbuilt parcel with a
+ * visible border still reads as a mark on the map. Drawing outlines unconditionally
+ * covered the unbuilt half of the island in white speckle.
+ */
+export function outlineColorExpression(
+  layer: StoryLayer,
+  budget: number,
+  year: number,
+): DataDrivenPropertyValueSpecification<string> {
+  const outline = layer.outlineColor ?? TRANSPARENT;
+  const fill = layer.fill;
+
+  switch (fill.type) {
+    case 'static':
+    case 'categorical':
+      return outline;
+
+    case 'buildout': {
+      const built: unknown[] = ['case', ['<', ['get', CUM_PROP], budget], outline, TRANSPARENT];
+      void fill;
+      if (!fill.exclude) return built as unknown as ExpressionSpecification;
+      return [
+        'case',
+        ['==', ['get', EXCLUDED_PROP], 1],
+        outline,
+        ...built.slice(1),
+      ] as unknown as ExpressionSpecification;
+    }
+
+    case 'joined-choropleth': {
+      if (fill.firstYear !== undefined && year < fill.firstYear) return TRANSPARENT;
+      return ['case', ['has', `y${year}`], outline, TRANSPARENT] as unknown as ExpressionSpecification;
+    }
+  }
+}
+
+/** Line width, optionally scaled by a feature property such as voltage. */
+export function lineWidthExpression(
+  layer: StoryLayer,
+): DataDrivenPropertyValueSpecification<number> {
+  const width = layer.lineWidth ?? 1;
+  if (typeof width === 'number') return width;
+  return [
+    'max',
+    width.minimum ?? 0,
+    ['*', ['to-number', ['get', width.property], 0], width.multiplier],
+  ] as unknown as ExpressionSpecification;
+}

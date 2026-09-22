@@ -1,0 +1,497 @@
+/*
+ * Projector-first styling.
+ *
+ * The display is a 4K projector throwing onto a physical relief model in a room
+ * with the lights up, viewed by people standing around a table. That means: dark
+ * surface so the projector's black is the terrain's own colour, high contrast,
+ * type far larger than a desktop app, and no thin hairlines that disappear on a
+ * textured surface.
+ *
+ * Layout is a named grid rather than the per-element vw/vh constants the previous
+ * version tuned by hand for every island.
+ */
+
+:root {
+  --surface: #05080f;
+  --surface-raised: #0e1420;
+  --surface-sunken: #080c15;
+  --border: #222c3e;
+  --border-strong: #35435c;
+
+  --ink: #f2f5fa;
+  --ink-secondary: #aab6c9;
+  --ink-muted: #6f7d93;
+
+  --accent: #4a86e8;
+  --accent-warm: #e8892e;
+
+  /*
+   * The rail maps onto a physical region of the table -- the puck area the cameras
+   * underneath cover -- so it is a fixed pixel width, not a proportion of the
+   * viewport. 1120px is 27.5% of the rig's 4096px-wide throw, which is where the
+   * legacy app put the map's left edge.
+   *
+   * Tune this to the rig, then leave it alone: changing it moves where pucks are
+   * expected to physically sit.
+   */
+  --rail-width: 1120px;
+  --legend-width: 260px;
+  --radius: 10px;
+  --shadow: 0 18px 48px rgb(0 0 0 / 55%);
+
+  --font: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: clamp(15px, 0.85vw, 20px);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button { font: inherit; color: inherit; }
+
+/* ------------------------------------------------------------------ boot */
+
+.boot {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+.boot__message { color: var(--ink-secondary); letter-spacing: 0.02em; }
+
+/* --------------------------------------------------------------- landing */
+
+.landing {
+  height: 100%;
+  overflow-y: auto;
+  padding: clamp(2rem, 6vh, 5rem) clamp(1rem, 6vw, 6rem);
+}
+
+.landing__eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.landing__title {
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 4.5rem);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.landing__lede {
+  max-width: 46ch;
+  margin: 1rem 0 0;
+  color: var(--ink-secondary);
+}
+
+.landing__error {
+  margin: 1.5rem 0 0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid #6b2f38;
+  border-radius: var(--radius);
+  background: #1d0f13;
+  color: #f0b3bb;
+}
+
+.landing__grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  margin-top: clamp(2rem, 5vh, 3.5rem);
+}
+
+.story-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.story-card:hover,
+.story-card:focus-visible { border-color: var(--accent); transform: translateY(-2px); }
+
+.story-card__image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+
+.story-card__body { display: block; padding: 1.1rem 1.25rem 1.35rem; }
+.story-card__title { display: block; font-size: 1.25em; font-weight: 500; }
+.story-card__subtitle { display: block; margin-top: 0.35rem; color: var(--ink-secondary); font-size: 0.92em; }
+
+/* ------------------------------------------------------------ table view */
+
+.table-view {
+  display: grid;
+  /* Never wider than the viewport allows, so a laptop can still show the map. */
+  grid-template-columns: min(var(--rail-width), 46vw) 1fr;
+  grid-template-areas: 'rail map';
+  height: 100%;
+  position: relative;
+}
+
+.story-map {
+  grid-area: map;
+  width: 100%;
+  height: 100%;
+  background: var(--surface);
+}
+
+/* MapLibre draws its own focus ring on the canvas; the map is not interactive. */
+.maplibregl-canvas:focus { outline: none; }
+
+/*
+ * The rail carries everything the operator touches.
+ *
+ * Content and puck zone split the height 50/50 -- a hard split, because the lower
+ * half corresponds to a real region of the table rather than to however much
+ * content happens to sit above it. The layer list runs full height down the edge
+ * nearest the map, so it is beside the pucks that drive it.
+ */
+.rail {
+  grid-area: rail;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--legend-width);
+  /* minmax(0, 1fr), not 1fr: a bare 1fr refuses to shrink below its content. */
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    'top    legend'
+    'pucks  legend';
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.rail__top {
+  grid-area: top;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 0;
+  padding: 1.2rem 1.3rem 0.9rem;
+  overflow: hidden;
+}
+
+.rail__header { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.rail__back {
+  align-self: flex-start;
+  padding: 0.3rem 0.6rem 0.3rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 0.85em;
+}
+
+.rail__back:hover { color: var(--ink); }
+
+.rail__title { margin: 0; font-size: 1.45em; font-weight: 500; letter-spacing: -0.01em; }
+
+.rail__legend {
+  grid-area: legend;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  padding: 1.2rem 0.9rem 1rem;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.rail__sectionTitle {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rail__note {
+  margin: 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+  color: var(--ink-secondary);
+  font-size: 0.8em;
+}
+
+/* ------------------------------------------------------------- puck zone */
+
+.puck-zone {
+  grid-area: pucks;
+  position: relative;
+  border-top: 1px dashed var(--border-strong);
+  /* A faint field so operators can see where pucks belong, even with none down. */
+  background:
+    radial-gradient(circle at 50% 45%, rgb(74 134 232 / 7%), transparent 70%),
+    var(--surface-sunken);
+  overflow: hidden;
+}
+
+.puck-zone__hint {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 0;
+  right: 0;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.66em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+/* ---------------------------------------------------------- big readouts */
+
+.readout-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+
+.readout {
+  display: grid;
+  align-content: start;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.readout__label {
+  color: var(--ink-muted);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Tabular figures stop the year jittering as it counts up. */
+.readout__value {
+  font-size: 1.7em;
+  font-weight: 300;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Year and scenario are peers, so they share a type size. */
+.readout__value--small { font-size: 1.7em; }
+.readout__range { color: var(--ink-muted); font-size: 0.8em; }
+
+/* ---------------------------------------------------------------- legend */
+
+.legend { display: flex; flex-direction: column; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
+
+.legend__item {
+  display: grid;
+  grid-template-columns: 0.55rem 1.6rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  opacity: 0.55;
+  text-align: left;
+  transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.legend__item:hover { background: var(--surface-raised); }
+.legend__item.is-active { opacity: 1; background: var(--surface-raised); }
+
+/* The layer the add/remove puck is pointed at. */
+.legend__item.is-armed { border-color: var(--border-strong); box-shadow: inset 2px 0 0 var(--accent); }
+
+.legend__swatch { width: 0.55rem; height: 1.9rem; border-radius: 3px; }
+.legend__icon { width: 1.6rem; height: 1.6rem; object-fit: contain; }
+.legend__text { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.legend__name { font-size: 0.95em; }
+
+/* Says why an active layer may be drawing little or nothing at this year. */
+.legend__status {
+  color: var(--ink-muted);
+  font-size: 0.72em;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend__state {
+  color: var(--ink-muted);
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.legend__item.is-active .legend__state { color: var(--accent); }
+
+/* ---------------------------------------------------------------- charts */
+
+.chart {
+  margin: 0;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.chart__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.95em;
+  font-weight: 500;
+}
+
+.chart__subtitle { color: var(--ink-muted); font-size: 0.8em; font-variant-numeric: tabular-nums; }
+.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* In the rail the chart shares a fixed half-height with the readouts, so the plot
+   gives up space before the legend beneath it does. */
+.rail__top .chart { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+.rail__top .chart__svg { min-height: 0; flex: 1 1 auto; height: 100%; }
+
+.chart__total { color: var(--ink); font-size: 1.1em; font-weight: 400; font-variant-numeric: tabular-nums; }
+.chart__totalUnit { color: var(--ink-muted); font-size: 0.7em; }
+
+.chart__barLabel { fill: var(--ink-secondary); font-size: 9px; }
+.chart__barValue { fill: var(--ink-muted); font-size: 8.5px; font-variant-numeric: tabular-nums; }
+
+.chart__grid { stroke: var(--border); stroke-width: 1; }
+.chart__axisLabel { fill: var(--ink-muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+.chart__seriesLabel { font-size: 9px; font-weight: 600; }
+
+.chart__yearRule { stroke: var(--border-strong); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.chart__yearLabel { fill: var(--ink); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* A 2px surface ring keeps overlapping markers readable. */
+.chart__marker { stroke: var(--surface-raised); stroke-width: 2; }
+
+.chart__legend {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.15rem 0.5rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82em;
+}
+
+.chart__legend li { display: contents; }
+.chart__swatch { width: 0.7rem; height: 0.7rem; align-self: center; border-radius: 3px; }
+.chart__legendName { color: var(--ink-secondary); }
+.chart__legendValue { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* ----------------------------------------------------------- puck halos */
+
+.puck-overlay { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+.puck {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: clamp(6rem, 8.5vw, 9.5rem);
+  aspect-ratio: 1;
+  border: 3px solid currentcolor;
+  border-radius: 50%;
+  background: rgb(5 8 15 / 55%);
+  box-shadow: var(--shadow);
+  /* Movement is a transform only, so a sliding puck never triggers layout. */
+  will-change: transform;
+}
+
+/* The index mark, so the rotation of the physical puck is legible from across the table. */
+.puck__tick {
+  position: absolute;
+  top: -3px;
+  width: 4px;
+  height: 1.1rem;
+  border-radius: 2px;
+}
+
+.puck__body { display: grid; place-items: center; gap: 0.1rem; padding: 0 0.7rem; text-align: center; }
+
+.puck__label {
+  color: var(--ink-muted);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.puck__value {
+  max-width: 6rem;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+/* ------------------------------------------------------------ status bar */
+
+.status-bar {
+  position: absolute;
+  bottom: 0;
+  left: var(--rail-width);
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  background: rgb(5 8 15 / 80%);
+  color: var(--ink-muted);
+  font-size: 0.75em;
+}
+
+.status-bar__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #8a5a2a; }
+.status-bar__dot.is-connected { background: #3fa97f; }
+
+/* Smaller screens (a laptop during development) stack the rails over the map. */
+@media (max-width: 1100px) {
+  .table-view { grid-template-columns: 1fr; grid-template-areas: 'map'; }
+  .rail {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(96vw, 42rem);
+  }
+  .status-bar { left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+}
