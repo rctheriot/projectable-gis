@@ -9,6 +9,16 @@ export const EXCLUDED_PROP = '_ex';
 const TRANSPARENT = 'rgba(0,0,0,0)';
 
 export const fillLayerId = (layer: StoryLayer) => `${layer.id}__fill`;
+
+/**
+ * The paint property that carries a layer's colour.
+ *
+ * A `line` layer has no `fill-color`, and MapLibre throws when you set a paint
+ * property a layer type does not have. Both the initial paint and every later
+ * update go through this, so the two can never disagree.
+ */
+export const colorProperty = (layer: StoryLayer): 'fill-color' | 'line-color' =>
+  layer.render === 'line' ? 'line-color' : 'fill-color';
 export const outlineLayerId = (layer: StoryLayer) => `${layer.id}__outline`;
 export const sourceId = (layer: StoryLayer) => `${layer.id}__source`;
 

@@ -5,6 +5,7 @@ import type { LoadedStory } from '@/story/loadStory';
 import { resolveBudget } from '@/story/loadStory';
 import type { StoryLayer } from '@/story/types';
 import {
+  colorProperty,
   fillColorExpression,
   fillLayerId,
   lineWidthExpression,
@@ -72,6 +73,7 @@ function addStoryLayers(map: MapLibreMap, loaded: LoadedStory, scenarioId: strin
     map.addSource(sourceId(layer), { type: 'geojson', data: layer.data });
 
     const visibility = active.has(layer.id) ? 'visible' : 'none';
+    const budget = budgetFor(layer, loaded, scenarioId, year);
 
     if (layer.render === 'line') {
       map.addLayer({
@@ -80,15 +82,16 @@ function addStoryLayers(map: MapLibreMap, loaded: LoadedStory, scenarioId: strin
         source: sourceId(layer),
         layout: { visibility, 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': layer.color,
+          // Driven by the fill mode, exactly like a polygon layer: the flooded
+          // highways are a threshold layer, so a static colour would draw every
+          // sea level scenario at once regardless of the dial.
+          'line-color': fillColorExpression(layer, budget, year),
           'line-width': lineWidthExpression(layer),
           'line-opacity': layer.opacity ?? 1,
         },
       });
       continue;
     }
-
-    const budget = budgetFor(layer, loaded, scenarioId, year);
 
     map.addLayer({
       id: fillLayerId(layer),
@@ -142,7 +145,7 @@ function applyPaint(
 ): void {
   if (!map.getLayer(fillLayerId(layer))) return;
   const budget = budgetFor(layer, loaded, scenarioId, year);
-  map.setPaintProperty(fillLayerId(layer), 'fill-color', fillColorExpression(layer, budget, year));
+  map.setPaintProperty(fillLayerId(layer), colorProperty(layer), fillColorExpression(layer, budget, year));
   if (map.getLayer(outlineLayerId(layer))) {
     map.setPaintProperty(outlineLayerId(layer), 'line-color', outlineColorExpression(layer, budget, year));
   }

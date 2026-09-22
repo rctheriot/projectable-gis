@@ -40,11 +40,19 @@ const LEVELS = [0.5, 1.1, 2.0, 3.2];
  */
 const LEVEL_COLORS = ['#7FD4F5', '#45A8E0', '#2C7BC0', '#1F4E96'];
 
-const levelStops = LEVEL_COLORS.map((color, index) => ({
-  value: LEVELS[index],
-  color,
-  label: `${LEVELS[index]} ft`,
-}));
+/**
+ * The highways ramp is warm, not blue.
+ *
+ * A threshold layer colours by level, so linework sharing the exposure area's ramp
+ * disappears into the water it is drawn on top of. Same encoding -- brightest
+ * floods soonest -- in a hue that survives the background.
+ */
+const HIGHWAY_COLORS = ['#F7E06E', '#F5C542', '#E89B2F', '#C9701C'];
+
+const stops = (colors) =>
+  colors.map((color, index) => ({ value: LEVELS[index], color, label: `${LEVELS[index]} ft` }));
+
+const levelStops = stops(LEVEL_COLORS);
 
 /** Builds the four-scenario variant list for a themed set of upstream layers. */
 const scenarioVariants = (layerIds) =>
@@ -68,7 +76,12 @@ const thresholdLayer = (id, name, description, layerIds, options = {}) => ({
     // Widest footprint first, so nearer-term bands sit on top of it.
     sortBy: { property: 'slr_ft', direction: 'desc' },
   },
-  fill: { type: 'threshold', property: 'slr_ft', dialScale: 0.1, levels: levelStops },
+  fill: {
+    type: 'threshold',
+    property: 'slr_ft',
+    dialScale: 0.1,
+    levels: options.levels ?? levelStops,
+  },
 });
 
 const STORY = {
@@ -178,7 +191,7 @@ const LAYERS = [
     'Flooded Highways',
     'State highway segments within the exposure area. Oahu’s coastal highways are single points of failure for whole communities -- losing a segment can cut off far more than it floods.',
     [68, 69, 70, 71],
-    { render: 'line', lineWidth: 3, opacity: 1, color: '#F5D04A' },
+    { render: 'line', lineWidth: 4, opacity: 1, color: '#F5C542', levels: stops(HIGHWAY_COLORS) },
   ),
 ];
 

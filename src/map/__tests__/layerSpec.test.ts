@@ -1,6 +1,6 @@
 import { createPropertyExpression, v8 } from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, it } from 'vitest';
-import { fillColorExpression, lineWidthExpression, outlineColorExpression } from '../layerSpec';
+import { colorProperty, fillColorExpression, lineWidthExpression, outlineColorExpression } from '../layerSpec';
 import type { StoryLayer } from '@/story/types';
 
 /**
@@ -146,6 +146,43 @@ describe('threshold fill reveals levels as the dial rises', () => {
     const at = (slr: number) => evaluate(compileColor(fillColorExpression(layer, 32, 32)), { slr_ft: slr });
     const colors = [0.5, 1.1, 2, 3.2].map((v) => `${at(v).r},${at(v).g},${at(v).b}`);
     expect(new Set(colors).size).toBe(4);
+  });
+});
+
+describe('colorProperty', () => {
+  /*
+   * A `line` layer has no `fill-color`, and MapLibre throws when a paint property
+   * is set that the layer type does not have. The flooded-highways layer is both a
+   * line layer *and* a threshold layer, so it is repainted whenever the dial moves
+   * -- which crashed the app on every step until the property was chosen by render
+   * type rather than assumed to be `fill-color`.
+   */
+  it('picks the property that the layer type actually has', () => {
+    expect(colorProperty({ ...base, render: 'fill' })).toBe('fill-color');
+    expect(colorProperty({ ...base, render: 'line' })).toBe('line-color');
+  });
+
+  it('compiles a threshold expression against the line-colour spec too', () => {
+    const layer: StoryLayer = {
+      ...base,
+      render: 'line',
+      lineWidth: 3,
+      fill: {
+        type: 'threshold',
+        property: 'slr_ft',
+        dialScale: 0.1,
+        levels: [
+          { value: 0.5, color: '#7FD4F5' },
+          { value: 3.2, color: '#1F4E96' },
+        ],
+      },
+    };
+    const compiled = createPropertyExpression(
+      fillColorExpression(layer, 32, 32),
+      'line-color',
+      spec['paint_line']!['line-color'] as never,
+    );
+    expect(compiled.result).toBe('success');
   });
 });
 

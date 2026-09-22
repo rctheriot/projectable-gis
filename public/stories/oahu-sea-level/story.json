@@ -262,28 +262,28 @@
         "levels": [
           {
             "value": 0.5,
-            "color": "#7FD4F5",
+            "color": "#F7E06E",
             "label": "0.5 ft"
           },
           {
             "value": 1.1,
-            "color": "#45A8E0",
+            "color": "#F5C542",
             "label": "1.1 ft"
           },
           {
             "value": 2,
-            "color": "#2C7BC0",
+            "color": "#E89B2F",
             "label": "2 ft"
           },
           {
             "value": 3.2,
-            "color": "#1F4E96",
+            "color": "#C9701C",
             "label": "3.2 ft"
           }
         ]
       },
-      "color": "#F5D04A",
-      "lineWidth": 3,
+      "color": "#F5C542",
+      "lineWidth": 4,
       "opacity": 1,
       "defaultActive": false
     }
