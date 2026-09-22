@@ -1,4 +1,4 @@
-# Projectable Pucks
+# Projectable GIS
 
 A GIS storytelling table. A projector throws a map onto a 3D-printed relief model;
 cameras under the table read fiducials on physical pucks; turning a puck moves
