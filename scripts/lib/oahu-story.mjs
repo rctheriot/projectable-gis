@@ -81,6 +81,9 @@ const STORY = {
     { id: 'e3genmod', name: 'E3 Gen Mod', description: 'E3 projection with generation modelling applied.' },
   ],
 
+  // Rooftop solar below the Ko'olau range: the trade-off this story is about.
+  cover: 'assets/covers/oahu-energy.png',
+
   source: {
     baseMap: 'images/oahu-satellite5.png',
     joins: [

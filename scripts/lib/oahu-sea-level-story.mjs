@@ -89,6 +89,10 @@ const STORY = {
   title: 'Oahu and the Rising Sea',
   subtitle: 'Which ground goes under, and which is already a tsunami evacuation zone',
 
+  // A tsunami evacuation sign: the hazard Oahu already signs for, which is where
+  // this story starts before the water gets higher.
+  cover: 'assets/covers/oahu-sea-level.png',
+
   // The base raster is the one the energy story already ships, so this story adds
   // no new imagery and does not depend on the retired Angular assets.
   sourceDir: PROJECT_ROOT,

@@ -188,6 +188,28 @@ function parseCsv(text) {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * The photograph on the story's card.
+ *
+ * Cropped to the card's 16:9 at build time rather than by the browser, so the bytes
+ * shipped are the bytes shown. 1400px covers a 2x display at the card's size.
+ */
+async function buildCover(story, OUT) {
+  const src = path.join(PROJECT_ROOT, story.cover);
+  if (!existsSync(src)) throw new Error(`Cover image for "${story.id}" not found at ${src}.`);
+
+  const dest = path.join(OUT, 'cover.webp');
+  await sharp(src).resize(1400, 788, { fit: 'cover', position: story.coverPosition ?? 'centre' })
+    .webp({ quality: 82, effort: 5 })
+    .toFile(dest);
+
+  const before = (await readFile(src)).byteLength;
+  const after = (await readFile(dest)).byteLength;
+  log(`  cover     ${mb(before)} -> ${mb(after)}`);
+
+  return `stories/${story.id}/cover.webp`;
+}
+
 async function buildBaseMap(story, SOURCE, OUT) {
   const src = path.join(SOURCE, story.source.baseMap);
   const image = sharp(src);
@@ -316,6 +338,9 @@ async function buildStory(story) {
     ? await buildBaseMap(story, SOURCE, OUT)
     : { image: story.baseMapImage, width: story.baseMapWidth, height: story.baseMapHeight };
 
+  // A story without its own photograph falls back to its base map.
+  const cover = story.cover ? await buildCover(story, OUT) : baseMap.image;
+
   const joinTables = new Map();
   for (const join of story.source?.joins ?? []) {
     joinTables.set(join.id, await buildJoinTable(join, SOURCE));
@@ -389,7 +414,7 @@ async function buildStory(story) {
     id: story.id,
     title: story.title,
     subtitle: story.subtitle,
-    coverImage: baseMap.image,
+    coverImage: cover,
     path: `stories/${story.id}/story.json`,
   };
 }

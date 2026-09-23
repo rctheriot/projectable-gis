@@ -156,6 +156,16 @@ inventing years the published data does not support &mdash; the State's four sce
 were tied to 2100 in 2017 and the 2022 guidance revised the timing without
 republishing the maps.
 
+### Story cover images
+
+A story names a photograph with `cover`, relative to the project root. The build
+crops it to the card's 16:9 and writes a 1400px WebP, so the bytes shipped are the
+bytes shown rather than a full-size image the browser shrinks. Originals live in
+`assets/covers/` and are committed &mdash; they are the only copy, and the derived
+WebP cannot be re-cropped at a different size without them.
+
+A story with no `cover` falls back to its base map.
+
 ### Remote data
 
 A layer can name an ArcGIS REST service instead of a local file. It is fetched
