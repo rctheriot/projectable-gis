@@ -212,6 +212,13 @@ export interface StoryLayer {
   /** Raster layers only: the frames, and where to put them. */
   frames?: RasterFrame[];
   corners?: ImageCorners;
+  /**
+   * The colour ramp baked into a raster's pixels, low to high.
+   *
+   * A raster spans its whole ramp, so a single swatch cannot stand for it: the
+   * legend draws the gradient instead, which doubles as the key.
+   */
+  ramp?: string[];
   color: string;
   outlineColor?: string;
   /** For `line` layers this is the stroke width; supports a property multiplier. */

@@ -77,7 +77,17 @@ export function Legend({ loaded, activeLayerIds, armedLayerIndex, year, scenario
               onClick={() => onToggle(layer.id)}
               aria-pressed={active}
             >
-              <span className="legend__swatch" style={{ background: layer.color }} aria-hidden />
+              <span
+                className="legend__swatch"
+                style={{
+                  // A raster covers its entire ramp, so the swatch shows the ramp
+                  // rather than pretending one colour represents it.
+                  background: layer.ramp
+                    ? `linear-gradient(to top, ${layer.ramp.join(', ')})`
+                    : layer.color,
+                }}
+                aria-hidden
+              />
               {layer.icon ? <img className="legend__icon" src={layer.icon} alt="" /> : null}
               <span className="legend__text">
                 <span className="legend__name">{layer.name}</span>

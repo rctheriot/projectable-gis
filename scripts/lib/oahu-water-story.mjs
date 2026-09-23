@@ -17,7 +17,6 @@
  */
 import { PROJECT_ROOT } from './paths.mjs';
 
-const CLIMATE = 'https://geodata.hawaii.gov/arcgis/rest/services/Climate/MapServer';
 const CULTURAL = 'https://geodata.hawaii.gov/arcgis/rest/services/HistoricCultural/MapServer';
 const FRESHWATER = 'https://geodata.hawaii.gov/arcgis/rest/services/FreshWater/MapServer';
 
@@ -49,10 +48,30 @@ function lastTwelveMonths(endOffsetMonths = 2) {
 const MONTHS = lastTwelveMonths();
 
 /**
- * Rainfall ramp, dry to wet. Sequential, one hue family, and the dry end fades out
- * so the terrain shows through where little falls.
+ * Rainfall ramp, dry to wet, across the full spectrum.
+ *
+ * Every adjacent step is separated by dE 14 or more, so the bands are individually
+ * readable rather than a smear. Lightness rises from the blue end and peaks at
+ * yellow before the red -- unavoidable for a blue-to-red ramp, since yellow is
+ * intrinsically the lightest hue there is. Ordering is therefore carried by hue,
+ * which everyone already reads as blue-cool-less and red-hot-more, and reinforced
+ * by opacity: the dry end fades toward transparent so the terrain shows through
+ * where little falls, and the wet end is both the most saturated and the most solid.
  */
-const RAINFALL_RAMP = ['#1B3A5C', '#1F5E86', '#2288AE', '#35AEDB', '#7FD4F5', '#D8F3FF'];
+const RAINFALL_RAMP = ['#1E3A66', '#2B6FB0', '#1FA3A3', '#5CB84F', '#D4C230', '#E8853A', '#E0403A'];
+
+/**
+ * Layer hues, validated as a categorical palette against the dark surface.
+ *
+ * The rainfall rasters use the ramp above, so the vector layers have to stay
+ * distinguishable from each other without competing with it.
+ */
+const LAYER_HUES = {
+  moku: '#8878F0',
+  watersheds: '#3FA97F',
+  ahupuaa: '#C2842F',
+  streams: '#3A9FD8',
+};
 
 /** Millimetres at which the ramp saturates, chosen for a single wet month. */
 const MONTHLY_MAX_MM = 900;
@@ -132,11 +151,11 @@ const LAYERS = [
     description:
       'The six traditional districts of Oahu. Their boundaries follow the two mountain ranges, so each district faces its own weather.',
     render: 'fill',
-    color: '#4A86E8',
-    outlineColor: '#FFFFFF',
-    outlineOpacity: 0.55,
+    color: LAYER_HUES.moku,
+    outlineColor: '#C9C0FF',
+    outlineOpacity: 0.7,
     lineWidth: 1.5,
-    opacity: 0.3,
+    opacity: 0.28,
     remote: {
       service: CULTURAL,
       variants: [{ layer: 3 }],
@@ -149,34 +168,12 @@ const LAYERS = [
     fill: { type: 'categorical', property: 'moku', categories: MOKU_COLORS, fallback: '#4A86E8' },
   },
   {
-    id: 'ahupuaa',
-    name: 'Ahupuaʻa',
-    description:
-      'Land divisions running ridge to reef. Each holds a full slice of the rainfall gradient — wet uplands, a stream, dry coast — so a community had everything it needed within one boundary. The lines follow the terrain because the terrain is what they were drawn from.',
-    render: 'fill',
-    color: '#E8D9A8',
-    outlineColor: '#FFF3D0',
-    outlineOpacity: 0.85,
-    lineWidth: 1,
-    opacity: 0.08,
-    remote: {
-      service: CULTURAL,
-      variants: [{ layer: 1 }],
-      where: OAHU_ONLY,
-      bbox: OAHU_BBOX,
-      outFields: 'ahupuaa,moku',
-      keepFrom: true,
-      simplify: SIMPLIFY,
-    },
-    fill: { type: 'static' },
-  },
-  {
     id: 'watersheds',
     name: 'Watersheds',
     description:
       'The modern hydrological delineation of the same island. Worth turning on alongside the ahupuaʻa: two different centuries reading the same ridgelines.',
     render: 'fill',
-    color: '#3FA97F',
+    color: LAYER_HUES.watersheds,
     outlineColor: '#8FE0BE',
     outlineOpacity: 0.8,
     lineWidth: 1,
@@ -191,12 +188,34 @@ const LAYERS = [
     fill: { type: 'static' },
   },
   {
+    id: 'ahupuaa',
+    name: 'Ahupuaʻa',
+    description:
+      'Land divisions running ridge to reef. Each holds a full slice of the rainfall gradient — wet uplands, a stream, dry coast — so a community had everything it needed within one boundary. The lines follow the terrain because the terrain is what they were drawn from.',
+    render: 'fill',
+    color: LAYER_HUES.ahupuaa,
+    outlineColor: '#F0C77A',
+    outlineOpacity: 0.9,
+    lineWidth: 1,
+    opacity: 0.1,
+    remote: {
+      service: CULTURAL,
+      variants: [{ layer: 1 }],
+      where: OAHU_ONLY,
+      bbox: OAHU_BBOX,
+      outFields: 'ahupuaa,moku',
+      keepFrom: true,
+      simplify: SIMPLIFY,
+    },
+    fill: { type: 'static' },
+  },
+  {
     id: 'streams',
     name: 'Streams',
     description:
       'Where the rain goes after it lands. The density of this network on the windward side, against its near-absence on the leeward, is the rainfall map drawn in water.',
     render: 'line',
-    color: '#6FC6FF',
+    color: LAYER_HUES.streams,
     lineWidth: 1.2,
     opacity: 0.9,
     remote: {
@@ -214,7 +233,7 @@ const LAYERS = [
     description:
       'Everything that fell over the last twelve months, accumulated. A filled field rather than contour lines, so the windward-leeward divide reads as a gradient instead of a set of boundaries.',
     render: 'raster',
-    color: '#35AEDB',
+    color: RAINFALL_RAMP[3],
     opacity: 0.8,
     ramp: RAINFALL_RAMP,
     maxValue: ANNUAL_MAX_MM,
@@ -229,32 +248,12 @@ const LAYERS = [
     description:
       'Each month on its own, at 250m. The Ko\u02BBolau crest is wet in every frame; the \u02BBEwa plain is dry in every frame. What changes between them is the season.',
     render: 'raster',
-    color: '#7FD4F5',
+    color: RAINFALL_RAMP[4],
     opacity: 0.85,
     defaultActive: true,
     ramp: RAINFALL_RAMP,
     maxValue: MONTHLY_MAX_MM,
     series: MONTHS,
-    fill: { type: 'static' },
-  },
-  {
-    id: 'rainfall-contours',
-    name: 'Mean Annual Contours',
-    description:
-      'Long-term average isohyets, 25 to 260 inches a year, from the Statewide GIS layer. Reference lines for the field above \u2014 a thirty-year normal against twelve actual months.',
-    render: 'line',
-    color: '#FFF3D0',
-    lineWidth: 1.2,
-    opacity: 0.55,
-    remote: {
-      service: CLIMATE,
-      variants: [{ layer: 13 }],
-      where: '1=1',
-      bbox: OAHU_BBOX,
-      outFields: 'contour',
-      keepFrom: true,
-      simplify: SIMPLIFY_LINES,
-    },
     fill: { type: 'static' },
   },
 ];

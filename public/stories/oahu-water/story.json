@@ -107,26 +107,11 @@
         },
         "fallback": "#4A86E8"
       },
-      "color": "#4A86E8",
-      "outlineColor": "#FFFFFF",
+      "color": "#8878F0",
+      "outlineColor": "#C9C0FF",
       "lineWidth": 1.5,
-      "opacity": 0.3,
-      "outlineOpacity": 0.55
-    },
-    {
-      "id": "ahupuaa",
-      "name": "Ahupuaʻa",
-      "description": "Land divisions running ridge to reef. Each holds a full slice of the rainfall gradient — wet uplands, a stream, dry coast — so a community had everything it needed within one boundary. The lines follow the terrain because the terrain is what they were drawn from.",
-      "data": "stories/oahu-water/layers/ahupuaa.geojson",
-      "render": "fill",
-      "fill": {
-        "type": "static"
-      },
-      "color": "#E8D9A8",
-      "outlineColor": "#FFF3D0",
-      "lineWidth": 1,
-      "opacity": 0.08,
-      "outlineOpacity": 0.85
+      "opacity": 0.28,
+      "outlineOpacity": 0.7
     },
     {
       "id": "watersheds",
@@ -144,6 +129,21 @@
       "outlineOpacity": 0.8
     },
     {
+      "id": "ahupuaa",
+      "name": "Ahupuaʻa",
+      "description": "Land divisions running ridge to reef. Each holds a full slice of the rainfall gradient — wet uplands, a stream, dry coast — so a community had everything it needed within one boundary. The lines follow the terrain because the terrain is what they were drawn from.",
+      "data": "stories/oahu-water/layers/ahupuaa.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#C2842F",
+      "outlineColor": "#F0C77A",
+      "lineWidth": 1,
+      "opacity": 0.1,
+      "outlineOpacity": 0.9
+    },
+    {
       "id": "streams",
       "name": "Streams",
       "description": "Where the rain goes after it lands. The density of this network on the windward side, against its near-absence on the leeward, is the rainfall map drawn in water.",
@@ -152,7 +152,7 @@
       "fill": {
         "type": "static"
       },
-      "color": "#6FC6FF",
+      "color": "#3A9FD8",
       "lineWidth": 1.2,
       "opacity": 0.9
     },
@@ -164,8 +164,17 @@
       "fill": {
         "type": "static"
       },
-      "color": "#35AEDB",
+      "color": "#5CB84F",
       "opacity": 0.8,
+      "ramp": [
+        "#1E3A66",
+        "#2B6FB0",
+        "#1FA3A3",
+        "#5CB84F",
+        "#D4C230",
+        "#E8853A",
+        "#E0403A"
+      ],
       "frames": [
         {
           "value": 1,
@@ -199,9 +208,18 @@
       "fill": {
         "type": "static"
       },
-      "color": "#7FD4F5",
+      "color": "#D4C230",
       "opacity": 0.85,
       "defaultActive": true,
+      "ramp": [
+        "#1E3A66",
+        "#2B6FB0",
+        "#1FA3A3",
+        "#5CB84F",
+        "#D4C230",
+        "#E8853A",
+        "#E0403A"
+      ],
       "frames": [
         {
           "value": 1,
@@ -282,19 +300,6 @@
           21.179999999999996
         ]
       ]
-    },
-    {
-      "id": "rainfall-contours",
-      "name": "Mean Annual Contours",
-      "description": "Long-term average isohyets, 25 to 260 inches a year, from the Statewide GIS layer. Reference lines for the field above — a thirty-year normal against twelve actual months.",
-      "data": "stories/oahu-water/layers/rainfall-contours.geojson",
-      "render": "line",
-      "fill": {
-        "type": "static"
-      },
-      "color": "#FFF3D0",
-      "lineWidth": 1.2,
-      "opacity": 0.55
     }
   ]
 }

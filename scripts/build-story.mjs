@@ -469,6 +469,7 @@ async function buildStory(story) {
       outlineOpacity: layer.outlineOpacity,
       defaultActive: layer.defaultActive,
       buildoutTotal: layer.buildoutTotal,
+      ramp: layer.render === 'raster' ? layer.ramp : undefined,
       frames: rasterSeries.get(layer.id)?.frames,
       corners: rasterSeries.get(layer.id)?.corners,
     })),
