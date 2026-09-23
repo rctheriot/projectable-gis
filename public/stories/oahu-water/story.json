@@ -157,6 +157,133 @@
       "opacity": 0.9
     },
     {
+      "id": "rainfall-total",
+      "name": "Rainfall, 12-month total",
+      "description": "Everything that fell over the last twelve months, accumulated. A filled field rather than contour lines, so the windward-leeward divide reads as a gradient instead of a set of boundaries.",
+      "render": "raster",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#35AEDB",
+      "opacity": 0.8,
+      "frames": [
+        {
+          "value": 1,
+          "image": "stories/oahu-water/rasters/rainfall-total-total.webp"
+        }
+      ],
+      "corners": [
+        [
+          -158.322,
+          21.742499999999996
+        ],
+        [
+          -157.602,
+          21.742499999999996
+        ],
+        [
+          -157.602,
+          21.179999999999996
+        ],
+        [
+          -158.322,
+          21.179999999999996
+        ]
+      ]
+    },
+    {
+      "id": "rainfall-monthly",
+      "name": "Rainfall by month",
+      "description": "Each month on its own, at 250m. The Koʻolau crest is wet in every frame; the ʻEwa plain is dry in every frame. What changes between them is the season.",
+      "render": "raster",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#7FD4F5",
+      "opacity": 0.85,
+      "defaultActive": true,
+      "frames": [
+        {
+          "value": 1,
+          "label": "Aug 2025",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2025-08.webp"
+        },
+        {
+          "value": 2,
+          "label": "Sep 2025",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2025-09.webp"
+        },
+        {
+          "value": 3,
+          "label": "Oct 2025",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2025-10.webp"
+        },
+        {
+          "value": 4,
+          "label": "Nov 2025",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2025-11.webp"
+        },
+        {
+          "value": 5,
+          "label": "Dec 2025",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2025-12.webp"
+        },
+        {
+          "value": 6,
+          "label": "Jan 2026",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2026-01.webp"
+        },
+        {
+          "value": 7,
+          "label": "Feb 2026",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2026-02.webp"
+        },
+        {
+          "value": 8,
+          "label": "Mar 2026",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2026-03.webp"
+        },
+        {
+          "value": 9,
+          "label": "Apr 2026",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2026-04.webp"
+        },
+        {
+          "value": 10,
+          "label": "May 2026",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2026-05.webp"
+        },
+        {
+          "value": 11,
+          "label": "Jun 2026",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2026-06.webp"
+        },
+        {
+          "value": 12,
+          "label": "Jul 2026",
+          "image": "stories/oahu-water/rasters/rainfall-monthly-2026-07.webp"
+        }
+      ],
+      "corners": [
+        [
+          -158.322,
+          21.742499999999996
+        ],
+        [
+          -157.602,
+          21.742499999999996
+        ],
+        [
+          -157.602,
+          21.179999999999996
+        ],
+        [
+          -158.322,
+          21.179999999999996
+        ]
+      ]
+    },
+    {
       "id": "rainfall-contours",
       "name": "Mean Annual Contours",
       "description": "Long-term average isohyets, 25 to 260 inches a year, from the Statewide GIS layer. Reference lines for the field above — a thirty-year normal against twelve actual months.",

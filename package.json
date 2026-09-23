@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare-story": "node scripts/build-story.mjs",
-    "markers": "node scripts/generate-markers.mjs"
+    "markers": "node scripts/generate-markers.mjs",
+    "check:token-leak": "node scripts/check-token-leak.mjs"
   },
   "dependencies": {
     "d3-dsv": "^3.0.1",

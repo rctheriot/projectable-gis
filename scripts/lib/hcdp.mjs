@@ -30,19 +30,35 @@ const OAHU_EXTENT = 'oa';
 
 export class MissingTokenError extends Error {}
 
-/** Reads HCDP_API_TOKEN from the environment or a .env file. */
+/**
+ * Names this will accept for the HCDP token, in order.
+ *
+ * `VITE_MESONET_API_KEY` is here because the same credential is used by another
+ * app in this group and it is easier to keep one name across both. Note that the
+ * `VITE_` prefix has meaning to Vite: it marks a variable as safe to inline into
+ * client code. This one is not -- it is read here, in Node, at build time only, and
+ * nothing under src/ may reference it. `npm run check:token-leak` proves that.
+ */
+const TOKEN_NAMES = ['HCDP_API_TOKEN', 'VITE_MESONET_API_KEY', 'MESONET_API_KEY'];
+
+/** Reads the HCDP token from the environment or a .env file. */
 export async function readToken(projectRoot) {
-  if (process.env.HCDP_API_TOKEN) return process.env.HCDP_API_TOKEN.trim();
+  for (const name of TOKEN_NAMES) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
 
   const envFile = path.join(projectRoot, '.env');
-  if (existsSync(envFile)) {
-    for (const line of (await readFile(envFile, 'utf8')).split(/\r?\n/)) {
-      const match = /^\s*HCDP_API_TOKEN\s*=\s*(.*)$/.exec(line);
-      if (match) {
-        // Tolerate quotes, which people add out of habit.
-        const value = match[1].trim().replace(/^['"]|['"]$/g, '');
-        if (value) return value;
-      }
+  if (!existsSync(envFile)) return null;
+
+  const lines = (await readFile(envFile, 'utf8')).split(/\r?\n/);
+  for (const name of TOKEN_NAMES) {
+    for (const line of lines) {
+      const match = new RegExp(`^\\s*${name}\\s*=\\s*(.*)$`).exec(line);
+      if (!match) continue;
+      // Tolerate quotes, which people add out of habit.
+      const value = match[1].trim().replace(/^['"]|['"]$/g, '');
+      if (value) return value;
     }
   }
   return null;
