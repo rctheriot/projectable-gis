@@ -92,6 +92,13 @@ const STORY = {
   // A tsunami evacuation sign: the hazard Oahu already signs for, which is where
   // this story starts before the water gets higher.
   cover: 'assets/covers/oahu-sea-level.png',
+  /*
+   * Anchored to the top, not the centre. The sign sits high in the frame, so a
+   * centred 16:9 crop drops sky from above it and leaves it at 26% from the top of
+   * the card; keeping the top puts it at 43%, which reads as centred. Truly
+   * centring it would need sky the photograph does not contain.
+   */
+  coverPosition: 'top',
 
   // The base raster is the one the energy story already ships, so this story adds
   // no new imagery and does not depend on the retired Angular assets.
