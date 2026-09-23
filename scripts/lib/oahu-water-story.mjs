@@ -105,6 +105,10 @@ const STORY = {
   title: 'Where the Rain Falls',
   subtitle: 'How two mountain ranges make Oahu’s water, and how the island was divided to match',
 
+  // Rain shafts falling on the Ko'olau, with the rainbow they make: the whole
+  // story in one frame, seen from the dry side looking at the wet one.
+  cover: 'assets/covers/oahu-water.png',
+
   sourceDir: PROJECT_ROOT,
   baseMapImage: 'stories/oahu-energy/base-map.webp',
   baseMapWidth: 4096,
