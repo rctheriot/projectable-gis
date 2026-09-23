@@ -1,0 +1,196 @@
+{
+  "id": "oahu-water",
+  "title": "Where the Rain Falls",
+  "subtitle": "How two mountain ranges make Oahu’s water, and how the island was divided to match",
+  "years": {
+    "min": 0,
+    "max": 260
+  },
+  "scenarios": [
+    {
+      "id": "annual",
+      "name": "Annual average",
+      "description": "Mean annual rainfall from the Rainfall Atlas of Hawai‘i."
+    }
+  ],
+  "baseMap": {
+    "image": "stories/oahu-energy/base-map.webp",
+    "width": 4096,
+    "height": 3171,
+    "corners": [
+      [
+        -158.281,
+        21.71
+      ],
+      [
+        -157.647,
+        21.71
+      ],
+      [
+        -157.647,
+        21.252
+      ],
+      [
+        -158.281,
+        21.252
+      ]
+    ]
+  },
+  "palette": {},
+  "seriesOrder": [],
+  "dial": {
+    "label": "Rainfall at least",
+    "unit": "in/yr",
+    "decimals": 0
+  },
+  "dataSources": [],
+  "charts": [],
+  "pucks": [
+    {
+      "markerId": 0,
+      "label": "Rainfall",
+      "action": {
+        "type": "year",
+        "step": 5
+      },
+      "degreesPerStep": 10,
+      "color": "#35AEDB"
+    },
+    {
+      "markerId": 1,
+      "label": "Layer",
+      "action": {
+        "type": "select-layer"
+      },
+      "degreesPerStep": 30,
+      "color": "#38A6A5"
+    },
+    {
+      "markerId": 2,
+      "label": "Add / Remove",
+      "action": {
+        "type": "toggle-layer"
+      },
+      "degreesPerStep": 45,
+      "color": "#E8A33D"
+    }
+  ],
+  "layers": [
+    {
+      "id": "moku",
+      "name": "Moku (Districts)",
+      "description": "The six traditional districts of Oahu. Their boundaries follow the two mountain ranges, so each district faces its own weather.",
+      "data": "stories/oahu-water/layers/moku.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "categorical",
+        "property": "moku",
+        "categories": {
+          "ʻEwa": "#3FA97F",
+          "Kona": "#4A86E8",
+          "Koʻolauloa": "#D2495B",
+          "Ko'olaupoko": "#B58B1B",
+          "Waialua": "#A97BE0",
+          "Waiʻanae": "#CE7228"
+        },
+        "fallback": "#4A86E8"
+      },
+      "color": "#4A86E8",
+      "outlineColor": "#FFFFFF",
+      "lineWidth": 1.5,
+      "opacity": 0.3,
+      "outlineOpacity": 0.55
+    },
+    {
+      "id": "ahupuaa",
+      "name": "Ahupuaʻa",
+      "description": "Land divisions running ridge to reef. Each holds a full slice of the rainfall gradient — wet uplands, a stream, dry coast — so a community had everything it needed within one boundary. The lines follow the terrain because the terrain is what they were drawn from.",
+      "data": "stories/oahu-water/layers/ahupuaa.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#E8D9A8",
+      "outlineColor": "#FFF3D0",
+      "lineWidth": 1,
+      "opacity": 0.08,
+      "outlineOpacity": 0.85
+    },
+    {
+      "id": "watersheds",
+      "name": "Watersheds",
+      "description": "The modern hydrological delineation of the same island. Worth turning on alongside the ahupuaʻa: two different centuries reading the same ridgelines.",
+      "data": "stories/oahu-water/layers/watersheds.geojson",
+      "render": "fill",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#3FA97F",
+      "outlineColor": "#8FE0BE",
+      "lineWidth": 1,
+      "opacity": 0.12,
+      "outlineOpacity": 0.8
+    },
+    {
+      "id": "streams",
+      "name": "Streams",
+      "description": "Where the rain goes after it lands. The density of this network on the windward side, against its near-absence on the leeward, is the rainfall map drawn in water.",
+      "data": "stories/oahu-water/layers/streams.geojson",
+      "render": "line",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#6FC6FF",
+      "lineWidth": 1.2,
+      "opacity": 0.9
+    },
+    {
+      "id": "rainfall",
+      "name": "Annual Rainfall",
+      "description": "Isohyets — lines of equal rainfall — from 25 to over 260 inches a year. Raise the dial to drop the dry lowlands and watch what is left collapse onto the Koʻolau crest.",
+      "data": "stories/oahu-water/layers/rainfall.geojson",
+      "render": "line",
+      "fill": {
+        "type": "threshold",
+        "property": "contour",
+        "comparison": "gte",
+        "levels": [
+          {
+            "value": 25,
+            "color": "#31556E",
+            "label": "25 in"
+          },
+          {
+            "value": 50,
+            "color": "#2E7295",
+            "label": "50 in"
+          },
+          {
+            "value": 80,
+            "color": "#2B90BD",
+            "label": "80 in"
+          },
+          {
+            "value": 120,
+            "color": "#35AEDB",
+            "label": "120 in"
+          },
+          {
+            "value": 180,
+            "color": "#5FCDEE",
+            "label": "180 in"
+          },
+          {
+            "value": 240,
+            "color": "#9BE4F8",
+            "label": "240 in"
+          }
+        ]
+      },
+      "color": "#35AEDB",
+      "lineWidth": 2,
+      "opacity": 1,
+      "defaultActive": true
+    }
+  ]
+}

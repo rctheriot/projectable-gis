@@ -78,7 +78,7 @@ export function fillColorExpression(
       // Rounded because the dial holds integer tenths and the data holds decimals.
       return [
         'case',
-        ['<=', ['to-number', ['get', fill.property], 1e9], Math.round(level * 1e6) / 1e6],
+        thresholdTest(fill, level),
         ramp,
         TRANSPARENT,
       ] as unknown as ExpressionSpecification;
@@ -99,6 +99,19 @@ export function fillColorExpression(
       return ['case', ['has', key], step, TRANSPARENT] as unknown as ExpressionSpecification;
     }
   }
+}
+
+/**
+ * Whether a feature is past the dial.
+ *
+ * The fallback pushes a feature without the property to the side that hides it,
+ * whichever direction the comparison runs.
+ */
+function thresholdTest(fill: { property: string; comparison?: 'lte' | 'gte' }, level: number): unknown {
+  const rounded = Math.round(level * 1e6) / 1e6;
+  return fill.comparison === 'gte'
+    ? ['>=', ['to-number', ['get', fill.property], -1e9], rounded]
+    : ['<=', ['to-number', ['get', fill.property], 1e9], rounded];
 }
 
 /**
@@ -134,13 +147,7 @@ export function outlineColorExpression(
     }
 
     case 'threshold': {
-      const level = year * (fill.dialScale ?? 1);
-      return [
-        'case',
-        ['<=', ['to-number', ['get', fill.property], 1e9], Math.round(level * 1e6) / 1e6],
-        outline,
-        TRANSPARENT,
-      ] as unknown as ExpressionSpecification;
+      return ['case', thresholdTest(fill, year * (fill.dialScale ?? 1)), outline, TRANSPARENT] as unknown as ExpressionSpecification;
     }
 
     case 'joined-choropleth': {

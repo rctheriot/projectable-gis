@@ -7,5 +7,6 @@
  */
 import { oahuEnergy } from './oahu-story.mjs';
 import { oahuSeaLevel } from './oahu-sea-level-story.mjs';
+import { oahuWater } from './oahu-water-story.mjs';
 
-export const STORIES = [oahuEnergy, oahuSeaLevel];
+export const STORIES = [oahuEnergy, oahuSeaLevel, oahuWater];

@@ -12,5 +12,12 @@
     "subtitle": "Land, time and trade-offs on the way to 100% renewable by 2045",
     "coverImage": "stories/oahu-energy/cover.webp",
     "path": "stories/oahu-energy/story.json"
+  },
+  {
+    "id": "oahu-water",
+    "title": "Where the Rain Falls",
+    "subtitle": "How two mountain ranges make Oahu’s water, and how the island was divided to match",
+    "coverImage": "stories/oahu-energy/base-map.webp",
+    "path": "stories/oahu-water/story.json"
   }
 ]

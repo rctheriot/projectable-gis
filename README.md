@@ -149,6 +149,15 @@ constants per UI element.
 |---|---|---|
 | **Oahu Energy Goals** | year, 2016&ndash;2045 | Utility and consultant scenarios from the legacy project |
 | **Oahu and the Rising Sea** | sea level, 0.0&ndash;3.2 ft | Hawai'i Statewide GIS Program, fetched at build time |
+| **Where the Rain Falls** | rainfall, 0&ndash;260 in/yr | Rainfall Atlas of Hawai'i, ahupua'a and streams, fetched at build time |
+
+**Where the Rain Falls** is the story the relief model tells best. The trade winds
+hit the Ko'olau wall, are forced up, and drop their water on the windward crest --
+over 260 inches a year within sight of leeward ground that gets 25. The dial runs
+*downward* through the layers: at 0 every rainfall contour is drawn, and as it
+climbs the dry lowlands fall away until a single ring is left on the ridge. Then the
+ahupua'a, the traditional ridge-to-reef land divisions, show that the island's
+boundaries were not drawn *on* the terrain but *by* it.
 
 The dial is not always a year. A story declares how it reads (`dial: { label, scale,
 decimals, unit }`), so the sea level story scrubs feet in tenths rather than

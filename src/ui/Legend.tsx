@@ -27,6 +27,17 @@ function layerStatus(layer: StoryLayer, loaded: LoadedStory, scenarioId: string,
 
   if (fill.type === 'threshold') {
     const level = year * (fill.dialScale ?? 1);
+
+    // The two directions need different words. `lte` reveals bands as the dial
+    // climbs, so it reads as a ceiling; `gte` drops them, so it reads as a count of
+    // what survives.
+    if (fill.comparison === 'gte') {
+      const remaining = fill.levels.filter((stop) => stop.value >= level - 1e-9).length;
+      if (remaining === 0) return 'none left';
+      if (remaining === fill.levels.length) return 'all bands';
+      return `${remaining} of ${fill.levels.length} bands`;
+    }
+
     const reached = fill.levels.filter((stop) => stop.value <= level + 1e-9);
     if (reached.length === 0) return 'none yet';
     return `to ${reached[reached.length - 1]?.label ?? reached[reached.length - 1]?.value}`;

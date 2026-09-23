@@ -163,6 +163,14 @@ export interface ThresholdFill {
   property: string;
   /** The dial is an integer; multiply by this to get the compared value. */
   dialScale?: number;
+  /**
+   * Which way the dial filters.
+   *
+   * `lte` (the default) reveals: sea level rise footprints appear as the water
+   * climbs past them. `gte` narrows: rainfall contours drop away as the dial rises,
+   * until only the wettest remain on the ridge crest.
+   */
+  comparison?: 'lte' | 'gte';
   /** Colour per level, lowest first. A sequential ramp, since this is magnitude. */
   levels: { value: number; color: string; label?: string }[];
 }
