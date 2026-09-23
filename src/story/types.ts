@@ -186,16 +186,32 @@ export type FillMode =
 // Layers
 // ---------------------------------------------------------------------------
 
+/** One frame of a raster series: the image shown when the dial reaches `value`. */
+export interface RasterFrame {
+  value: number;
+  image: string;
+  label?: string;
+}
+
 export interface StoryLayer {
   id: string;
   name: string;
-  /** Path to the GeoJSON, relative to the site root. */
-  data: string;
+  /** Path to the GeoJSON, relative to the site root. Absent for raster layers. */
+  data?: string;
   icon?: string;
   description?: string;
-  /** Rendering primitive. `line` is for transmission-style linework. */
-  render: 'fill' | 'line';
+  /**
+   * Rendering primitive.
+   *
+   * `line` is for linework; `raster` is a georeferenced image, or a series of them
+   * indexed by the dial -- a continuous field such as a rainfall grid, which vector
+   * contours can only approximate.
+   */
+  render: 'fill' | 'line' | 'raster';
   fill: FillMode;
+  /** Raster layers only: the frames, and where to put them. */
+  frames?: RasterFrame[];
+  corners?: ImageCorners;
   color: string;
   outlineColor?: string;
   /** For `line` layers this is the stroke width; supports a property multiplier. */
@@ -266,6 +282,11 @@ export interface DialSpec {
   scale?: number;
   decimals?: number;
   unit?: string;
+  /**
+   * Names for each dial position, indexed from `years.min`. Months read as
+   * "January", not "1".
+   */
+  labels?: string[];
 }
 
 export interface Story {

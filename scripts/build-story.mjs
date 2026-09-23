@@ -18,6 +18,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { annotateBuildout } from './lib/buildout.mjs';
 import { simplifyFeatures } from './lib/simplify.mjs';
+import { readRainfall, sumGrids, writeRainfallImage, readToken } from './lib/hcdp.mjs';
 import { PROJECT_ROOT } from './lib/paths.mjs';
 import { STORIES } from './lib/stories.mjs';
 
@@ -246,6 +247,60 @@ async function buildJoinTable(join, SOURCE) {
   return table;
 }
 
+/**
+ * Builds a raster series from the Hawai'i Climate Data Portal.
+ *
+ * Returns null when there is no token, so the rest of the story still builds --
+ * the data is gated behind a free signup and a fresh clone should not fail on it.
+ */
+async function buildRasterSeries(story, layer, OUT) {
+  const token = await readToken(PROJECT_ROOT);
+  if (!token) {
+    log(`  ${layer.id.padEnd(18)} skipped — no HCDP_API_TOKEN in .env`);
+    return null;
+  }
+
+  const dir = path.join(OUT, 'rasters');
+  await mkdir(dir, { recursive: true });
+
+  // Fetch every month first: a summed layer needs all of them, and months that
+  // have not been published yet simply drop out.
+  const grids = [];
+  for (const frame of layer.series) {
+    const grid = await readRainfall(token, frame.date, CACHE_DIR);
+    if (grid) grids.push({ ...frame, grid });
+  }
+
+  if (grids.length === 0) {
+    log(`  ${layer.id.padEnd(18)} skipped \u2014 HCDP returned no months`);
+    return null;
+  }
+
+  const render = (grid, file) =>
+    writeRainfallImage(grid, { outFile: path.join(dir, file), ramp: layer.ramp, maxValue: layer.maxValue });
+
+  if (layer.aggregate === 'sum') {
+    const file = `${layer.id}-total.webp`;
+    const peak = await render(sumGrids(grids.map((g) => g.grid)), file);
+    log(`  ${layer.id.padEnd(18)} ${grids.length} months summed, peak ${Math.round(peak)}mm`);
+    return {
+      frames: [{ value: layer.frameValue ?? 0, image: `stories/${story.id}/rasters/${file}` }],
+      corners: grids[0].grid.corners,
+    };
+  }
+
+  const frames = [];
+  let peak = 0;
+  for (const { date, value, label, grid } of grids) {
+    const file = `${layer.id}-${date}.webp`;
+    peak = Math.max(peak, await render(grid, file));
+    frames.push({ value, label, image: `stories/${story.id}/rasters/${file}` });
+  }
+
+  log(`  ${layer.id.padEnd(18)} ${frames.length} month(s), peak ${Math.round(peak)}mm`);
+  return { frames, corners: grids[0].grid.corners };
+}
+
 async function buildLayer(story, layer, joinTables, SOURCE, OUT) {
   let geojson;
   let features;
@@ -348,7 +403,13 @@ async function buildStory(story) {
 
   log('\n  layer            before      after');
   const layerPaths = new Map();
+  const rasterSeries = new Map();
   for (const layer of story.layers) {
+    if (layer.render === 'raster') {
+      const built = await buildRasterSeries(story, layer, OUT);
+      if (built) rasterSeries.set(layer.id, built);
+      continue;
+    }
     layerPaths.set(layer.id, await buildLayer(story, layer, joinTables, SOURCE, OUT));
   }
 
@@ -389,7 +450,11 @@ async function buildStory(story) {
     })),
     charts: story.charts,
     pucks: story.pucks,
-    layers: story.layers.map((layer) => ({
+    layers: story.layers
+      // A raster layer whose data could not be fetched is left out entirely
+      // rather than shipped as a legend entry that shows nothing.
+      .filter((layer) => layer.render !== 'raster' || rasterSeries.has(layer.id))
+      .map((layer) => ({
       id: layer.id,
       name: layer.name,
       description: layer.description,
@@ -404,6 +469,8 @@ async function buildStory(story) {
       outlineOpacity: layer.outlineOpacity,
       defaultActive: layer.defaultActive,
       buildoutTotal: layer.buildoutTotal,
+      frames: rasterSeries.get(layer.id)?.frames,
+      corners: rasterSeries.get(layer.id)?.corners,
     })),
   };
 

@@ -22,6 +22,42 @@ const CULTURAL = 'https://geodata.hawaii.gov/arcgis/rest/services/HistoricCultur
 const FRESHWATER = 'https://geodata.hawaii.gov/arcgis/rest/services/FreshWater/MapServer';
 
 const OAHU_BBOX = [-158.31, 21.23, -157.62, 21.73];
+
+/**
+ * The twelve months the dial scrubs.
+ *
+ * HCDP's "new" production rainfall maps lag real time by a month or two, so this
+ * ends two months back. Months that turn out not to be published yet are dropped
+ * during the build rather than failing it.
+ */
+function lastTwelveMonths(endOffsetMonths = 2) {
+  const now = new Date();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - endOffsetMonths, 1));
+  const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - (11 - i), 1));
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return {
+      value: i + 1,
+      date: `${d.getUTCFullYear()}-${month}`,
+      label: `${names[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
+    };
+  });
+}
+
+const MONTHS = lastTwelveMonths();
+
+/**
+ * Rainfall ramp, dry to wet. Sequential, one hue family, and the dry end fades out
+ * so the terrain shows through where little falls.
+ */
+const RAINFALL_RAMP = ['#1B3A5C', '#1F5E86', '#2288AE', '#35AEDB', '#7FD4F5', '#D8F3FF'];
+
+/** Millimetres at which the ramp saturates, chosen for a single wet month. */
+const MONTHLY_MAX_MM = 900;
+/** Twelve months of accumulation reaches far higher on the crest. */
+const ANNUAL_MAX_MM = 7000;
 const SIMPLIFY = { toleranceMetres: 5, minAreaSqm: 500 };
 const SIMPLIFY_LINES = { toleranceMetres: 5 };
 
@@ -31,19 +67,6 @@ const SIMPLIFY_LINES = { toleranceMetres: 5 };
  * No other island name ends in "ahu", so a suffix match is both simpler and safer.
  */
 const OAHU_ONLY = "mokupuni LIKE '%ahu'";
-
-/**
- * Rainfall is a magnitude, so it gets a sequential ramp: one hue, dim to bright.
- * Bright means wet, which on a dark projector surface is the way round that reads.
- */
-const RAINFALL_STOPS = [
-  { value: 25, color: '#31556E', label: '25 in' },
-  { value: 50, color: '#2E7295', label: '50 in' },
-  { value: 80, color: '#2B90BD', label: '80 in' },
-  { value: 120, color: '#35AEDB', label: '120 in' },
-  { value: 180, color: '#5FCDEE', label: '180 in' },
-  { value: 240, color: '#9BE4F8', label: '240 in' },
-];
 
 /**
  * The six moku of Oahu. A categorical palette, validated against the dark surface:
@@ -75,12 +98,12 @@ const STORY = {
   ],
 
   /*
-   * The dial is rainfall, and it *narrows*: at zero every contour is drawn, and as
-   * it climbs the dry lowlands drop away until only the wettest lines remain,
-   * collapsed onto the Ko'olau crest. On the table that happens on the actual ridge.
+   * The dial is time: twelve months of actual rainfall, not a long-term average.
+   * Turning it through the year shows the windward side soak in the winter wet
+   * season while the leeward plain stays dry in every frame.
    */
-  years: { min: 0, max: 260 },
-  dial: { label: 'Rainfall at least', unit: 'in/yr', decimals: 0 },
+  years: { min: 1, max: 12 },
+  dial: { label: 'Month', labels: MONTHS.map((m) => m.label) },
 
   scenarios: [
     {
@@ -96,7 +119,7 @@ const STORY = {
   charts: [],
 
   pucks: [
-    { markerId: 0, label: 'Rainfall', action: { type: 'year', step: 5 }, degreesPerStep: 10, color: '#35AEDB' },
+    { markerId: 0, label: 'Month', action: { type: 'year', step: 1 }, degreesPerStep: 30, color: '#35AEDB' },
     { markerId: 1, label: 'Layer', action: { type: 'select-layer' }, degreesPerStep: 30, color: '#38A6A5' },
     { markerId: 2, label: 'Add / Remove', action: { type: 'toggle-layer' }, degreesPerStep: 45, color: '#E8A33D' },
   ],
@@ -186,15 +209,43 @@ const LAYERS = [
     fill: { type: 'static' },
   },
   {
-    id: 'rainfall',
-    name: 'Annual Rainfall',
+    id: 'rainfall-total',
+    name: 'Rainfall, 12-month total',
     description:
-      'Isohyets — lines of equal rainfall — from 25 to over 260 inches a year. Raise the dial to drop the dry lowlands and watch what is left collapse onto the Koʻolau crest.',
-    render: 'line',
+      'Everything that fell over the last twelve months, accumulated. A filled field rather than contour lines, so the windward-leeward divide reads as a gradient instead of a set of boundaries.',
+    render: 'raster',
     color: '#35AEDB',
-    lineWidth: 2,
-    opacity: 1,
+    opacity: 0.8,
+    ramp: RAINFALL_RAMP,
+    maxValue: ANNUAL_MAX_MM,
+    aggregate: 'sum',
+    frameValue: 1,
+    series: MONTHS,
+    fill: { type: 'static' },
+  },
+  {
+    id: 'rainfall-monthly',
+    name: 'Rainfall by month',
+    description:
+      'Each month on its own, at 250m. The Ko\u02BBolau crest is wet in every frame; the \u02BBEwa plain is dry in every frame. What changes between them is the season.',
+    render: 'raster',
+    color: '#7FD4F5',
+    opacity: 0.85,
     defaultActive: true,
+    ramp: RAINFALL_RAMP,
+    maxValue: MONTHLY_MAX_MM,
+    series: MONTHS,
+    fill: { type: 'static' },
+  },
+  {
+    id: 'rainfall-contours',
+    name: 'Mean Annual Contours',
+    description:
+      'Long-term average isohyets, 25 to 260 inches a year, from the Statewide GIS layer. Reference lines for the field above \u2014 a thirty-year normal against twelve actual months.',
+    render: 'line',
+    color: '#FFF3D0',
+    lineWidth: 1.2,
+    opacity: 0.55,
     remote: {
       service: CLIMATE,
       variants: [{ layer: 13 }],
@@ -204,12 +255,7 @@ const LAYERS = [
       keepFrom: true,
       simplify: SIMPLIFY_LINES,
     },
-    fill: {
-      type: 'threshold',
-      property: 'contour',
-      comparison: 'gte',
-      levels: RAINFALL_STOPS,
-    },
+    fill: { type: 'static' },
   },
 ];
 

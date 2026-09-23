@@ -149,15 +149,15 @@ constants per UI element.
 |---|---|---|
 | **Oahu Energy Goals** | year, 2016&ndash;2045 | Utility and consultant scenarios from the legacy project |
 | **Oahu and the Rising Sea** | sea level, 0.0&ndash;3.2 ft | Hawai'i Statewide GIS Program, fetched at build time |
-| **Where the Rain Falls** | rainfall, 0&ndash;260 in/yr | Rainfall Atlas of Hawai'i, ahupua'a and streams, fetched at build time |
+| **Where the Rain Falls** | month, last 12 | HCDP gridded rainfall, plus ahupua'a, moku, watersheds and streams |
 
 **Where the Rain Falls** is the story the relief model tells best. The trade winds
 hit the Ko'olau wall, are forced up, and drop their water on the windward crest --
-over 260 inches a year within sight of leeward ground that gets 25. The dial runs
-*downward* through the layers: at 0 every rainfall contour is drawn, and as it
-climbs the dry lowlands fall away until a single ring is left on the ridge. Then the
-ahupua'a, the traditional ridge-to-reef land divisions, show that the island's
-boundaries were not drawn *on* the terrain but *by* it.
+over 260 inches a year within sight of leeward ground that gets 25. The dial moves
+through the last twelve months of observed rainfall, so the crest is wet in every
+frame and the 'Ewa plain is dry in every frame; what changes between them is the
+season. Then the ahupua'a, the traditional ridge-to-reef land divisions, show that
+the island's boundaries were not drawn *on* the terrain but *by* it.
 
 The dial is not always a year. A story declares how it reads (`dial: { label, scale,
 decimals, unit }`), so the sea level story scrubs feet in tenths rather than
@@ -190,6 +190,36 @@ projector surface (lightness band, chroma floor, colour-vision separation, contr
 and each ramp is a sequential scale inside its own hue. Sharing one blue ramp across
 four layers, as this story first did, meant turning on exposure and passive flooding
 together produced a single indistinguishable wash.
+
+### Hawai'i Climate Data Portal
+
+The rainfall field in **Where the Rain Falls** comes from HCDP's 250m gridded
+monthly rainfall, which needs a free API token:
+
+```bash
+cp .env.example .env          # then paste your token into HCDP_API_TOKEN
+npm run prepare-story -- --only oahu-water
+```
+
+The token is used **only** by the build. Rasters are fetched once, colourised into
+flat WebP images and committed, so the token never ships and no visitor touches the
+upstream API. Without one the build still succeeds &mdash; the rainfall layers are
+skipped with a note and the rest of the story is unaffected, so a fresh clone is
+never blocked on a credential.
+
+Request a token at the
+[HCDP API page](https://www.hawaii.edu/climate-data-portal/hcdp-hawaii-mesonet-api/).
+
+```
+GET https://api.hcdp.ikewai.org/raster
+    Authorization: Bearer <token>
+    datatype=rainfall&production=new&period=month&date=YYYY-MM&extent=oa
+```
+
+Two layers come out of it: each of the last twelve months on its own, indexed by
+the dial, and their sum as a single filled twelve-month total. `production=new`
+covers 1990 to roughly two months ago, so the month list ends two back and any
+month that is not published yet is dropped rather than failing the build.
 
 ### Remote data
 

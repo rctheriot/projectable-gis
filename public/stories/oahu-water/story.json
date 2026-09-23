@@ -3,8 +3,8 @@
   "title": "Where the Rain Falls",
   "subtitle": "How two mountain ranges make Oahu’s water, and how the island was divided to match",
   "years": {
-    "min": 0,
-    "max": 260
+    "min": 1,
+    "max": 12
   },
   "scenarios": [
     {
@@ -39,21 +39,33 @@
   "palette": {},
   "seriesOrder": [],
   "dial": {
-    "label": "Rainfall at least",
-    "unit": "in/yr",
-    "decimals": 0
+    "label": "Month",
+    "labels": [
+      "Aug 2025",
+      "Sep 2025",
+      "Oct 2025",
+      "Nov 2025",
+      "Dec 2025",
+      "Jan 2026",
+      "Feb 2026",
+      "Mar 2026",
+      "Apr 2026",
+      "May 2026",
+      "Jun 2026",
+      "Jul 2026"
+    ]
   },
   "dataSources": [],
   "charts": [],
   "pucks": [
     {
       "markerId": 0,
-      "label": "Rainfall",
+      "label": "Month",
       "action": {
         "type": "year",
-        "step": 5
+        "step": 1
       },
-      "degreesPerStep": 10,
+      "degreesPerStep": 30,
       "color": "#35AEDB"
     },
     {
@@ -145,52 +157,17 @@
       "opacity": 0.9
     },
     {
-      "id": "rainfall",
-      "name": "Annual Rainfall",
-      "description": "Isohyets — lines of equal rainfall — from 25 to over 260 inches a year. Raise the dial to drop the dry lowlands and watch what is left collapse onto the Koʻolau crest.",
-      "data": "stories/oahu-water/layers/rainfall.geojson",
+      "id": "rainfall-contours",
+      "name": "Mean Annual Contours",
+      "description": "Long-term average isohyets, 25 to 260 inches a year, from the Statewide GIS layer. Reference lines for the field above — a thirty-year normal against twelve actual months.",
+      "data": "stories/oahu-water/layers/rainfall-contours.geojson",
       "render": "line",
       "fill": {
-        "type": "threshold",
-        "property": "contour",
-        "comparison": "gte",
-        "levels": [
-          {
-            "value": 25,
-            "color": "#31556E",
-            "label": "25 in"
-          },
-          {
-            "value": 50,
-            "color": "#2E7295",
-            "label": "50 in"
-          },
-          {
-            "value": 80,
-            "color": "#2B90BD",
-            "label": "80 in"
-          },
-          {
-            "value": 120,
-            "color": "#35AEDB",
-            "label": "120 in"
-          },
-          {
-            "value": 180,
-            "color": "#5FCDEE",
-            "label": "180 in"
-          },
-          {
-            "value": 240,
-            "color": "#9BE4F8",
-            "label": "240 in"
-          }
-        ]
+        "type": "static"
       },
-      "color": "#35AEDB",
-      "lineWidth": 2,
-      "opacity": 1,
-      "defaultActive": true
+      "color": "#FFF3D0",
+      "lineWidth": 1.2,
+      "opacity": 0.55
     }
   ]
 }

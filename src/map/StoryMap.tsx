@@ -36,8 +36,17 @@ function budgetFor(layer: StoryLayer, loaded: LoadedStory, scenarioId: string, y
   return layer.fill.type === 'buildout' ? resolveBudget(layer.fill.budget, loaded.data, scenarioId, year) : 0;
 }
 
+/** Picks the frame to show at the current dial position: the latest one reached. */
+function frameFor(layer: StoryLayer, year: number) {
+  if (!layer.frames?.length) return null;
+  let chosen = layer.frames[0]!;
+  for (const frame of layer.frames) if (frame.value <= year) chosen = frame;
+  return chosen;
+}
+
 /** True when a layer's colours depend on the selected year or scenario. */
 function isTimeVarying(layer: StoryLayer): boolean {
+  if (layer.render === 'raster') return (layer.frames?.length ?? 0) > 1;
   return (
     layer.fill.type === 'buildout' ||
     layer.fill.type === 'joined-choropleth' ||
@@ -70,9 +79,24 @@ function initialStyle(): StyleSpecification {
 function addStoryLayers(map: MapLibreMap, loaded: LoadedStory, scenarioId: string, year: number, active: Set<string>) {
   for (const layer of loaded.story.layers) {
     if (map.getSource(sourceId(layer))) continue;
-    map.addSource(sourceId(layer), { type: 'geojson', data: layer.data });
-
     const visibility = active.has(layer.id) ? 'visible' : 'none';
+
+    if (layer.render === 'raster') {
+      const frame = frameFor(layer, year);
+      if (!frame || !layer.corners) continue;
+      const [tl, tr, br, bl] = layer.corners;
+      map.addSource(sourceId(layer), { type: 'image', url: frame.image, coordinates: [tl, tr, br, bl] });
+      map.addLayer({
+        id: fillLayerId(layer),
+        type: 'raster',
+        source: sourceId(layer),
+        layout: { visibility },
+        paint: { 'raster-opacity': layer.opacity ?? 0.85, 'raster-fade-duration': 0, 'raster-resampling': 'linear' },
+      });
+      continue;
+    }
+
+    map.addSource(sourceId(layer), { type: 'geojson', data: layer.data });
     const budget = budgetFor(layer, loaded, scenarioId, year);
 
     if (layer.render === 'line') {
@@ -144,6 +168,16 @@ function applyPaint(
   year: number,
 ): void {
   if (!map.getLayer(fillLayerId(layer))) return;
+
+  if (layer.render === 'raster') {
+    // One image source, many frames: swapping the URL lets the browser cache each
+    // month rather than holding twelve sources open at once.
+    const frame = frameFor(layer, year);
+    const source = map.getSource(sourceId(layer)) as { updateImage?: (o: { url: string }) => void } | undefined;
+    if (frame && source?.updateImage) source.updateImage({ url: frame.image });
+    return;
+  }
+
   const budget = budgetFor(layer, loaded, scenarioId, year);
   map.setPaintProperty(fillLayerId(layer), colorProperty(layer), fillColorExpression(layer, budget, year));
   if (map.getLayer(outlineLayerId(layer))) {

@@ -10,3 +10,6 @@ markers/
 
 # Cached upstream responses for `npm run prepare-story`
 .cache/
+
+# Local secrets
+.env

@@ -15,6 +15,10 @@ export function formatDial(story: Story, value: number): string {
   const dial = story.dial;
   if (!dial) return String(value);
 
+  // A named position wins: months are names, not numbers.
+  const named = dial.labels?.[value - story.years.min];
+  if (named) return named;
+
   const scaled = value * (dial.scale ?? 1);
   const text = scaled.toFixed(dial.decimals ?? 0);
   return dial.unit ? `${text} ${dial.unit}` : text;
@@ -24,6 +28,7 @@ export function formatDial(story: Story, value: number): string {
 export function formatDialRange(story: Story): string {
   const low = formatDial(story, story.years.min);
   const high = formatDial(story, story.years.max);
+  if (story.dial?.labels) return `${low}\u2013${high}`;
   // The unit only needs saying once.
   const unit = story.dial?.unit;
   if (!unit) return `${low}–${high}`;
