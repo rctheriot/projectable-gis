@@ -166,6 +166,22 @@ WebP cannot be re-cropped at a different size without them.
 
 A story with no `cover` falls back to its base map.
 
+### Layer colour
+
+Two things need distinguishing at once in the sea level story, and they are
+different kinds of thing:
+
+- **which dataset** you are looking at is an identity, carried by **hue** &mdash; each
+  of the seven layers has its own;
+- **how much sea level rise** a feature turns on at is a magnitude, carried by
+  **lightness within that hue** &mdash; lightest floods soonest, darkest only at 3.2 ft.
+
+The seven base hues are validated as a categorical palette against the dark
+projector surface (lightness band, chroma floor, colour-vision separation, contrast),
+and each ramp is a sequential scale inside its own hue. Sharing one blue ramp across
+four layers, as this story first did, meant turning on exposure and passive flooding
+together produced a single indistinguishable wash.
+
 ### Remote data
 
 A layer can name an ArcGIS REST service instead of a local file. It is fetched

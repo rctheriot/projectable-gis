@@ -86,8 +86,8 @@
       "fill": {
         "type": "static"
       },
-      "color": "#C2452C",
-      "outlineColor": "#FF9E85",
+      "color": "#CE4A6B",
+      "outlineColor": "#EE8AA3",
       "lineWidth": 1.5,
       "opacity": 0.45,
       "outlineOpacity": 0.9
@@ -101,8 +101,8 @@
       "fill": {
         "type": "static"
       },
-      "color": "#E8A33D",
-      "outlineColor": "#FFD98A",
+      "color": "#C2842F",
+      "outlineColor": "#E3B268",
       "lineWidth": 1.5,
       "opacity": 0.55,
       "outlineOpacity": 0.9
@@ -120,27 +120,27 @@
         "levels": [
           {
             "value": 0.5,
-            "color": "#7FD4F5",
+            "color": "#70A7FF",
             "label": "0.5 ft"
           },
           {
             "value": 1.1,
-            "color": "#45A8E0",
+            "color": "#5891F0",
             "label": "1.1 ft"
           },
           {
             "value": 2,
-            "color": "#2C7BC0",
+            "color": "#437CD8",
             "label": "2 ft"
           },
           {
             "value": 3.2,
-            "color": "#1F4E96",
+            "color": "#3669BC",
             "label": "3.2 ft"
           }
         ]
       },
-      "color": "#1F4E96",
+      "color": "#4A86E8",
       "opacity": 0.8,
       "defaultActive": true
     },
@@ -157,27 +157,27 @@
         "levels": [
           {
             "value": 0.5,
-            "color": "#7FD4F5",
+            "color": "#6FC6A0",
             "label": "0.5 ft"
           },
           {
             "value": 1.1,
-            "color": "#45A8E0",
+            "color": "#51B38A",
             "label": "1.1 ft"
           },
           {
             "value": 2,
-            "color": "#2C7BC0",
+            "color": "#389D76",
             "label": "2 ft"
           },
           {
             "value": 3.2,
-            "color": "#1F4E96",
+            "color": "#2C8864",
             "label": "3.2 ft"
           }
         ]
       },
-      "color": "#1F4E96",
+      "color": "#3FA97F",
       "opacity": 0.8,
       "defaultActive": false
     },
@@ -194,27 +194,27 @@
         "levels": [
           {
             "value": 0.5,
-            "color": "#7FD4F5",
+            "color": "#A69BFF",
             "label": "0.5 ft"
           },
           {
             "value": 1.1,
-            "color": "#45A8E0",
+            "color": "#9284F8",
             "label": "1.1 ft"
           },
           {
             "value": 2,
-            "color": "#2C7BC0",
+            "color": "#7E6FE0",
             "label": "2 ft"
           },
           {
             "value": 3.2,
-            "color": "#1F4E96",
+            "color": "#6C5DC3",
             "label": "3.2 ft"
           }
         ]
       },
-      "color": "#1F4E96",
+      "color": "#8878F0",
       "opacity": 0.8,
       "defaultActive": false
     },
@@ -231,27 +231,27 @@
         "levels": [
           {
             "value": 0.5,
-            "color": "#7FD4F5",
+            "color": "#EB86BB",
             "label": "0.5 ft"
           },
           {
             "value": 1.1,
-            "color": "#45A8E0",
+            "color": "#DA6DA8",
             "label": "1.1 ft"
           },
           {
             "value": 2,
-            "color": "#2C7BC0",
+            "color": "#C25893",
             "label": "2 ft"
           },
           {
             "value": 3.2,
-            "color": "#1F4E96",
+            "color": "#A8497E",
             "label": "3.2 ft"
           }
         ]
       },
-      "color": "#1F4E96",
+      "color": "#D0609E",
       "opacity": 0.8,
       "defaultActive": false
     },
@@ -268,27 +268,27 @@
         "levels": [
           {
             "value": 0.5,
-            "color": "#F7E06E",
+            "color": "#BFB358",
             "label": "0.5 ft"
           },
           {
             "value": 1.1,
-            "color": "#F5C542",
+            "color": "#AC9F37",
             "label": "1.1 ft"
           },
           {
             "value": 2,
-            "color": "#E89B2F",
+            "color": "#978919",
             "label": "2 ft"
           },
           {
             "value": 3.2,
-            "color": "#C9701C",
+            "color": "#82760D",
             "label": "3.2 ft"
           }
         ]
       },
-      "color": "#F5C542",
+      "color": "#A2941F",
       "lineWidth": 4,
       "opacity": 1,
       "defaultActive": false

@@ -35,35 +35,47 @@ const SIMPLIFY_LINES = { toleranceMetres: 5 };
 const LEVELS = [0.5, 1.1, 2.0, 3.2];
 
 /**
- * A sequential ramp: one hue, light to dark. Brightest floods first, so the bright
- * core reads as "soonest" and the dark outer band as "only at 3.2 ft".
- */
-const LEVEL_COLORS = ['#7FD4F5', '#45A8E0', '#2C7BC0', '#1F4E96'];
-
-/**
- * The highways ramp is warm, not blue.
+ * Each layer gets its own hue; the level is encoded *within* that hue.
  *
- * A threshold layer colours by level, so linework sharing the exposure area's ramp
- * disappears into the water it is drawn on top of. Same encoding -- brightest
- * floods soonest -- in a hue that survives the background.
+ * Two things need distinguishing at once here, and they are different kinds of
+ * thing. Which dataset you are looking at is an identity -- exposure, passive
+ * flooding, waves, erosion, highways -- and identity is carried by hue. How much
+ * sea level rise a feature turns on at is a magnitude, and magnitude is carried by
+ * lightness within the hue: lightest floods soonest, darkest only at 3.2 ft.
+ *
+ * Sharing one blue ramp across four layers, as this story first did, meant turning
+ * on exposure and passive flooding together produced a single indistinguishable
+ * wash. The seven base hues below are checked as a categorical palette against the
+ * dark projector surface -- lightness band, chroma floor, colour-vision separation
+ * and contrast -- and each ramp is a sequential scale inside its own hue.
  */
-const HIGHWAY_COLORS = ['#F7E06E', '#F5C542', '#E89B2F', '#C9701C'];
+const HUES = {
+  exposure: { base: '#4A86E8', ramp: ['#70A7FF', '#5891F0', '#437CD8', '#3669BC'] },
+  passive: { base: '#3FA97F', ramp: ['#6FC6A0', '#51B38A', '#389D76', '#2C8864'] },
+  waves: { base: '#8878F0', ramp: ['#A69BFF', '#9284F8', '#7E6FE0', '#6C5DC3'] },
+  erosion: { base: '#D0609E', ramp: ['#EB86BB', '#DA6DA8', '#C25893', '#A8497E'] },
+  highways: { base: '#A2941F', ramp: ['#BFB358', '#AC9F37', '#978919', '#82760D'] },
+};
 
-const stops = (colors) =>
-  colors.map((color, index) => ({ value: LEVELS[index], color, label: `${LEVELS[index]} ft` }));
+/** Tsunami zones are static, so a single hue each. */
+const TSUNAMI = {
+  extreme: { base: '#CE4A6B', outline: '#EE8AA3' },
+  standard: { base: '#C2842F', outline: '#E3B268' },
+};
 
-const levelStops = stops(LEVEL_COLORS);
+const stops = (ramp) =>
+  ramp.map((color, index) => ({ value: LEVELS[index], color, label: `${LEVELS[index]} ft` }));
 
 /** Builds the four-scenario variant list for a themed set of upstream layers. */
 const scenarioVariants = (layerIds) =>
   layerIds.map((layer, index) => ({ layer, properties: { slr_ft: LEVELS[index] } }));
 
-const thresholdLayer = (id, name, description, layerIds, options = {}) => ({
+const thresholdLayer = (id, name, description, layerIds, hue, options = {}) => ({
   id,
   name,
   description,
   render: options.render ?? 'fill',
-  color: options.color ?? LEVEL_COLORS[3],
+  color: HUES[hue].base,
   opacity: options.opacity ?? 0.8,
   lineWidth: options.lineWidth,
   defaultActive: options.defaultActive ?? false,
@@ -80,7 +92,7 @@ const thresholdLayer = (id, name, description, layerIds, options = {}) => ({
     type: 'threshold',
     property: 'slr_ft',
     dialScale: 0.1,
-    levels: options.levels ?? levelStops,
+    levels: stops(HUES[hue].ramp),
   },
 });
 
@@ -152,8 +164,8 @@ const LAYERS = [
     description:
       'The larger zone for a rare, worst-case Aleutian-source event. Roughly twice the area of the standard zone in places.',
     render: 'fill',
-    color: '#C2452C',
-    outlineColor: '#FF9E85',
+    color: TSUNAMI.extreme.base,
+    outlineColor: TSUNAMI.extreme.outline,
     outlineOpacity: 0.9,
     lineWidth: 1.5,
     opacity: 0.45,
@@ -172,8 +184,8 @@ const LAYERS = [
     description:
       'Where to leave during a tsunami warning. This is a hazard Oahu already lives with, mapped independently of sea level rise -- useful as the baseline the rising water is measured against.',
     render: 'fill',
-    color: '#E8A33D',
-    outlineColor: '#FFD98A',
+    color: TSUNAMI.standard.base,
+    outlineColor: TSUNAMI.standard.outline,
     outlineOpacity: 0.9,
     lineWidth: 1.5,
     opacity: 0.55,
@@ -192,6 +204,7 @@ const LAYERS = [
     'Sea Level Rise Exposure',
     "The State's combined chronic flooding footprint: passive flooding, annual high wave flooding and coastal erosion together. This is the layer Hawai'i plans against.",
     [42, 43, 44, 45],
+    'exposure',
     { defaultActive: true },
   ),
   thresholdLayer(
@@ -199,25 +212,29 @@ const LAYERS = [
     'Passive Flooding',
     'Ground simply below the tide line -- water arriving with nothing to stop it. One of the three components of the exposure area.',
     [46, 49, 50, 51],
+    'passive',
   ),
   thresholdLayer(
     'slr-waves',
     'Annual High Wave Flooding',
     'Reach of the highest waves in a typical year, on top of the raised sea. This is what puts water well inland of the passive flooding line on exposed coasts.',
     [52, 53, 54, 55],
+    'waves',
   ),
   thresholdLayer(
     'slr-erosion',
     'Coastal Erosion',
     'Land projected to be lost to shoreline retreat, not merely flooded. This ground does not come back at low tide.',
     [60, 61, 62, 63],
+    'erosion',
   ),
   thresholdLayer(
     'slr-highways',
     'Flooded Highways',
     'State highway segments within the exposure area. Oahu’s coastal highways are single points of failure for whole communities -- losing a segment can cut off far more than it floods.',
     [68, 69, 70, 71],
-    { render: 'line', lineWidth: 4, opacity: 1, color: '#F5C542', levels: stops(HIGHWAY_COLORS) },
+    'highways',
+    { render: 'line', lineWidth: 4, opacity: 1 },
   ),
 ];
 
