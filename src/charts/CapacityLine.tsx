@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { LoadedStory } from '@/story/loadStory';
 import type { ChartSpec } from '@/story/types';
+import { useChartSize } from './useChartSize';
 
 interface Props {
   loaded: LoadedStory;
@@ -9,12 +10,9 @@ interface Props {
   year: number;
 }
 
-const WIDTH = 320;
-const HEIGHT = 190;
-const PAD = { top: 16, right: 46, bottom: 26, left: 40 };
-
-const plotWidth = WIDTH - PAD.left - PAD.right;
-const plotHeight = HEIGHT - PAD.top - PAD.bottom;
+/** The shape the chart was designed at; it is laid out at whatever size it is given. */
+const REF_WIDTH = 320;
+const REF_HEIGHT = 190;
 
 const niceCeiling = (value: number) => {
   if (value <= 0) return 1;
@@ -31,6 +29,10 @@ const niceCeiling = (value: number) => {
 export function CapacityLine({ loaded, spec, scenarioId, year }: Props) {
   const { story } = loaded;
   const { min, max } = story.years;
+  const { ref, width: WIDTH, height: HEIGHT, unit } = useChartSize(REF_WIDTH, REF_HEIGHT);
+  const PAD = { top: 16 * unit, right: 46 * unit, bottom: 26 * unit, left: 40 * unit };
+  const plotWidth = WIDTH - PAD.left - PAD.right;
+  const plotHeight = HEIGHT - PAD.top - PAD.bottom;
 
   const model = useMemo(() => {
     const source = loaded.data[spec.source];
@@ -53,7 +55,7 @@ export function CapacityLine({ loaded, spec, scenarioId, year }: Props) {
     return { series, ceiling: niceCeiling(peak) };
   }, [loaded, spec.source, story, scenarioId, min, max]);
 
-  if (!model || model.series.length === 0) return null;
+  if (!model || model.series.length === 0) return <div ref={ref} />;
 
   const xOf = (value: number) => PAD.left + (max === min ? 0 : ((value - min) / (max - min)) * plotWidth);
   const yOf = (value: number) => PAD.top + plotHeight - (value / model.ceiling) * plotHeight;
@@ -68,12 +70,21 @@ export function CapacityLine({ loaded, spec, scenarioId, year }: Props) {
         <span className="chart__subtitle">{spec.unit}</span>
       </figcaption>
 
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={spec.title} className="chart__svg">
+      <div ref={ref} className="chart__plot" style={{ aspectRatio: `${REF_WIDTH} / ${REF_HEIGHT}` }}>
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        width={WIDTH}
+        height={HEIGHT}
+        role="img"
+        aria-label={spec.title}
+        className="chart__svg"
+        style={{ fontSize: 10 * unit }}
+      >
         {/* Recessive gridlines, behind the data. */}
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={PAD.left} x2={PAD.left + plotWidth} y1={yOf(tick)} y2={yOf(tick)} className="chart__grid" />
-            <text x={PAD.left - 6} y={yOf(tick) + 3} className="chart__axisLabel" textAnchor="end">
+            <text x={PAD.left - 6 * unit} y={yOf(tick) + 3 * unit} className="chart__axisLabel" textAnchor="end">
               {tick >= 1000 ? `${Math.round(tick / 1000)}k` : tick}
             </text>
           </g>
@@ -87,7 +98,7 @@ export function CapacityLine({ loaded, spec, scenarioId, year }: Props) {
             d={series.points.map((p, i) => `${i === 0 ? 'M' : 'L'}${xOf(p.year)} ${yOf(p.value)}`).join('')}
             fill="none"
             stroke={series.color}
-            strokeWidth={2}
+            strokeWidth={2 * unit}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
@@ -102,7 +113,7 @@ export function CapacityLine({ loaded, spec, scenarioId, year }: Props) {
               key={series.technology}
               cx={markerX}
               cy={yOf(point.value)}
-              r={4}
+              r={4 * unit}
               fill={series.color}
               className="chart__marker"
             >
@@ -118,8 +129,8 @@ export function CapacityLine({ loaded, spec, scenarioId, year }: Props) {
           return (
             <text
               key={series.technology}
-              x={PAD.left + plotWidth + 5}
-              y={yOf(last.value) + 3}
+              x={PAD.left + plotWidth + 5 * unit}
+              y={yOf(last.value) + 3 * unit}
               className="chart__seriesLabel"
               fill={series.color}
             >
@@ -129,14 +140,15 @@ export function CapacityLine({ loaded, spec, scenarioId, year }: Props) {
         })}
 
         {/* The endpoint labels give way to the year marker when it sits on top of them. */}
-        {markerX - PAD.left > 18 ? (
-          <text x={PAD.left} y={HEIGHT - 8} className="chart__axisLabel">{min}</text>
+        {markerX - PAD.left > 18 * unit ? (
+          <text x={PAD.left} y={HEIGHT - 8 * unit} className="chart__axisLabel">{min}</text>
         ) : null}
-        {PAD.left + plotWidth - markerX > 18 ? (
-          <text x={PAD.left + plotWidth} y={HEIGHT - 8} className="chart__axisLabel" textAnchor="end">{max}</text>
+        {PAD.left + plotWidth - markerX > 18 * unit ? (
+          <text x={PAD.left + plotWidth} y={HEIGHT - 8 * unit} className="chart__axisLabel" textAnchor="end">{max}</text>
         ) : null}
-        <text x={markerX} y={HEIGHT - 8} className="chart__yearLabel" textAnchor="middle">{year}</text>
+        <text x={markerX} y={HEIGHT - 8 * unit} className="chart__yearLabel" textAnchor="middle">{year}</text>
       </svg>
+      </div>
     </figure>
   );
 }

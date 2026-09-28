@@ -117,8 +117,10 @@ export function usePucks(bindings: PuckBinding[], kind: SourceKind, websocketUrl
       setStatus(source.getStatus());
     };
 
-    void source.start(onFrame);
     setStatus(source.getStatus());
+    // A camera takes a moment to open (and may wait on a permission prompt), so
+    // refresh the status once it has, rather than only when the first frame lands.
+    void Promise.resolve(source.start(onFrame)).then(() => setStatus(source.getStatus()));
 
     return () => source.stop();
   }, [source, bindings]);

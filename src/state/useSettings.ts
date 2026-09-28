@@ -28,8 +28,20 @@ export interface Settings {
    * table, so it is a fixed pixel value tuned once to the rig.
    */
   railWidth: number;
-  /** Width of the layer list down the rail's inner edge. */
+  /**
+   * Share of the rail's height given to the chart and readouts, 0..1. The rest is
+   * the puck zone.
+   */
+  chartSplit: number;
+  /**
+   * Dead band between the puck rail and the map, in CSS pixels. The table has an
+   * 80/20 extrusion running across it here, so nothing is drawn in it.
+   */
+  barGap: number;
+  /** The layer list, which floats in the map area. Position is from the map area's top-left. */
   legendWidth: number;
+  legendX: number;
+  legendY: number;
   /** Diameter of the projected puck halo, in CSS pixels. */
   puckSize: number;
 
@@ -57,7 +69,11 @@ export const DEFAULT_SETTINGS: Settings = {
   trackerUrl: 'ws://localhost:8765',
   // 27.5% of the rig's 4096px throw, where the legacy app put the map's left edge.
   railWidth: 1120,
-  legendWidth: 260,
+  chartSplit: 0.5,
+  barGap: 40,
+  legendWidth: 280,
+  legendX: 24,
+  legendY: 24,
   puckSize: 120,
   mapScale: 1,
   mapOffsetX: 0,
@@ -67,6 +83,8 @@ export const DEFAULT_SETTINGS: Settings = {
 
 interface SettingsState extends Settings {
   set: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
+  /** Applies several values at once, e.g. the settings page's Save. */
+  apply: (values: Partial<Settings>) => void;
   reset: () => void;
 }
 
@@ -75,24 +93,35 @@ export const useSettings = create<SettingsState>()(
     (set) => ({
       ...DEFAULT_SETTINGS,
       set: (key, value) => set({ [key]: value } as Partial<SettingsState>),
+      apply: (values) => set(values),
       reset: () => set({ ...DEFAULT_SETTINGS }),
     }),
     {
       name: 'projectable.settings.v1',
       // Only the data is persisted; the actions are rebuilt on load.
-      partialize: (state) =>
-        Object.fromEntries(Object.keys(DEFAULT_SETTINGS).map((key) => [key, state[key as keyof Settings]])),
+      partialize: (state) => pickSettings(state),
       // A stored file from an older build may be missing keys the app now expects.
       merge: (persisted, current) => ({ ...current, ...DEFAULT_SETTINGS, ...(persisted as Partial<Settings>) }),
     },
   ),
 );
 
+/** Just the data, without the store's actions. */
+export function pickSettings(state: Settings): Settings {
+  return Object.fromEntries(
+    Object.keys(DEFAULT_SETTINGS).map((key) => [key, state[key as keyof Settings]]),
+  ) as unknown as Settings;
+}
+
 /** The layout settings, as CSS custom properties for the table shell. */
 export function layoutVars(settings: Settings): Record<string, string> {
   return {
     '--rail-width': `${settings.railWidth}px`,
+    '--chart-split': `${settings.chartSplit}`,
+    '--bar-gap': `${settings.barGap}px`,
     '--legend-width': `${settings.legendWidth}px`,
+    '--legend-x': `${settings.legendX}px`,
+    '--legend-y': `${settings.legendY}px`,
     '--puck-size': `${settings.puckSize}px`,
   };
 }

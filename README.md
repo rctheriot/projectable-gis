@@ -96,10 +96,16 @@ A **Settings** page (link on the landing page, and in the table's status bar) ho
 everything that describes the physical installation, persisted to this browser's
 `localStorage` under `projectable.settings.v1`:
 
-- puck input source, camera device, capture resolution, tracker URL
-- puck rail width, layer list width, puck halo size — the rail maps onto a real
-  region of the table, so it is a fixed pixel width tuned once to the rig
-- calibration management: export, import, clear
+- puck input source, camera device (with a live test preview), capture resolution,
+  tracker URL
+- table layout: puck area width, chart/puck split, the 80/20 bar gap, layer list
+  size and position, puck halo size
+- projection alignment: scale, offset, rotation
+- calibration: calibrate, export, import, clear
+
+Edits are a draft until **Save** (or Cmd/Ctrl+S); leaving with unsaved changes asks
+first. Layout and alignment are easier to set on the table itself -- the **Layout**
+and **Align** buttons in the status bar -- and those save as you go.
 
 None of it is in the repository, because the same build runs on a laptop and on the
 table and only the machine knows which camera it has. A `?pucks=` URL parameter
@@ -344,7 +350,39 @@ and cancels it if the effect re-runs, so a StrictMode remount reuses the live ma
 ## Layout on the table
 
 ```
-+-------------------------------+--------+---------------------------+
++-----------------------------+---+-------------------------------------+
+| chart + year/scenario       | 8 |  +--------+                         |
++-----------------------------+ 0 |  | layers |        map              |
+|                             | / |  +--------+  (over the terrain)     |
+| puck area (camera sees it)  | 2 |                                     |
+|                             | 0 |                              status |
++-----------------------------+---+-------------------------------------+
+         rail                  bar             map area
+```
+
+Every width is a **fixed pixel value** because each maps onto a physical part of the
+table rather than a proportion of the screen. The rail defaults to 1120px (27.5% of
+the rig's 4096px throw, where the legacy app put the map's left edge). The **bar
+gap** is the 80/20 extrusion that crosses the table between the puck area and the
+model: it is painted black and nothing is placed in it. The layer list floats in the
+map area, beside the island it describes.
+
+**Layout** in the status bar shows the regions and makes their edges draggable: the
+rail's width, the bar gap, and the chart/puck split, plus the layer list's position
+and width. Changes save as you go.
+
+The map fills the **whole throw underneath** the panels rather than taking a column,
+so the island's registration with the relief model depends only on the projector
+alignment -- dragging a divider never moves the island. It is framed to the right of
+a fixed 1160px reserve, then aligned with **Align**.
+
+The lower part of the rail is the puck zone, kept deliberately clear of interface.
+**Tracker coordinates are normalised across that element, not the viewport**, so
+table space maps onto the area the camera covers -- which means resizing the puck
+area after calibrating needs a recalibration. The calibration screen renders through
+the same frame (`src/ui/TableFrame.tsx`), so its targets land in exactly that zone.
+
+-------------------------------+--------+---------------------------+
 | chart + year/scenario         | layers |                           |
 +-------------------------------+        |           map             |
 | puck area (cameras see this)  |        |     (over the terrain)    |
