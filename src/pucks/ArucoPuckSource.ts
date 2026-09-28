@@ -43,51 +43,92 @@ export class ArucoPuckSource implements PuckSource {
   private detail = 'starting';
   private lastElapsed = 0;
   private lastCount = 0;
+  private generation = 0;
+  /** The saved camera was not found and the browser default was used instead. */
+  private fellBack = false;
 
   constructor(private readonly options: ArucoOptions = {}) {}
 
   async start(onFrame: (frame: PuckFrame) => void) {
+    // Each start gets a token; stop() invalidates it. React StrictMode runs
+    // start/stop/start on the same instance, and without this the first start
+    // would carry on past its awaits and leak an open camera and a live worker.
+    const run = ++this.generation;
+    const stale = () => run !== this.generation;
+
     this.emit = onFrame;
     this.running = true;
 
-    const calibration = loadCalibration();
-    if (!calibration) {
-      this.detail = 'not calibrated — run calibration first';
-      return;
-    }
-    this.homography = calibration.homography;
+    // The camera opens whether or not there is a calibration: calibrating is how
+    // the first one is made, and it needs to see the pucks to do it. Uncalibrated,
+    // readings fall back to image-relative coordinates.
+    this.homography = loadCalibration()?.homography ?? null;
 
+    // Set before the await so a status read right after start() says what is
+    // actually happening: usually the browser's permission prompt.
+    this.detail = 'opening camera — allow access if the browser asks';
+
+    let stream: MediaStream;
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          deviceId: this.options.deviceId ? { exact: this.options.deviceId } : undefined,
-          width: { ideal: this.options.width ?? 1920 },
-          height: { ideal: this.options.height ?? 1080 },
-        },
-      });
+      stream = await this.openCamera();
     } catch (error) {
-      this.detail = `no camera: ${error instanceof Error ? error.message : String(error)}`;
+      if (!stale()) this.detail = `no camera: ${error instanceof Error ? error.message : String(error)}`;
       return;
     }
+    if (stale()) {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
+    }
+    this.stream = stream;
 
     const video = document.createElement('video');
-    video.srcObject = this.stream;
+    video.srcObject = stream;
     video.playsInline = true;
     video.muted = true;
-    await video.play();
+    try {
+      await video.play();
+    } catch (error) {
+      if (!stale()) this.detail = `camera would not play: ${error instanceof Error ? error.message : String(error)}`;
+      return;
+    }
+    if (stale()) return;
     this.video = video;
 
     this.worker = new Worker(new URL('../workers/aruco.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = (event: MessageEvent<DetectResponse>) => this.onMarkers(event.data);
 
-    const track = this.stream.getVideoTracks()[0];
+    const track = stream.getVideoTracks()[0];
     const settings = track?.getSettings();
     this.detail = `${settings?.width ?? '?'}x${settings?.height ?? '?'} @ ${settings?.frameRate ?? '?'}fps`;
 
     void this.pump();
   }
 
+  /**
+   * Opens the configured camera, falling back to the browser default if that
+   * device is gone -- a saved deviceId goes stale when the camera is swapped or the
+   * browser's site data is cleared, and `exact` then fails outright.
+   */
+  private async openCamera(): Promise<MediaStream> {
+    const size = {
+      width: { ideal: this.options.width ?? 1920 },
+      height: { ideal: this.options.height ?? 1080 },
+    };
+    if (this.options.deviceId) {
+      try {
+        return await navigator.mediaDevices.getUserMedia({
+          video: { ...size, deviceId: { exact: this.options.deviceId } },
+        });
+      } catch (error) {
+        if (!(error instanceof DOMException) || error.name !== 'OverconstrainedError') throw error;
+        this.fellBack = true;
+      }
+    }
+    return navigator.mediaDevices.getUserMedia({ video: size });
+  }
+
   stop() {
+    this.generation += 1;
     this.running = false;
     this.worker?.terminate();
     this.worker = null;
@@ -95,15 +136,20 @@ export class ArucoPuckSource implements PuckSource {
     this.stream = null;
     this.video = null;
     this.emit = null;
+    this.busy = false;
+  }
+
+  /** The live camera stream, for a preview. Null until the camera has opened. */
+  getStream(): MediaStream | null {
+    return this.stream;
   }
 
   getStatus() {
-    return {
-      connected: this.running && this.worker !== null,
-      detail: this.homography
-        ? `${this.detail} · ${this.lastCount} puck(s) · ${this.lastElapsed.toFixed(0)}ms`
-        : this.detail,
-    };
+    const parts = [this.detail];
+    if (this.worker) parts.push(`${this.lastCount} marker(s)`, `${this.lastElapsed.toFixed(0)}ms`);
+    if (this.worker && !this.homography) parts.push('not calibrated');
+    if (this.fellBack) parts.push('saved camera not found, using default');
+    return { connected: this.running && this.worker !== null, detail: parts.join(' · ') };
   }
 
   /** Grabs frames as fast as detection can keep up with, never faster. */

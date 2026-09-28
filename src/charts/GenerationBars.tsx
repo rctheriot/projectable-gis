@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { LoadedStory } from '@/story/loadStory';
 import { valueAt } from '@/story/loadStory';
 import type { ChartSpec } from '@/story/types';
+import { useChartSize } from './useChartSize';
 
 interface Props {
   loaded: LoadedStory;
@@ -10,11 +11,9 @@ interface Props {
   year: number;
 }
 
-const WIDTH = 320;
-const HEIGHT = 168;
-const PAD = { top: 18, right: 4, bottom: 30, left: 38 };
-const plotWidth = WIDTH - PAD.left - PAD.right;
-const plotHeight = HEIGHT - PAD.top - PAD.bottom;
+/** The shape the chart was designed at; it is laid out at whatever size it is given. */
+const REF_WIDTH = 320;
+const REF_HEIGHT = 168;
 
 /** A 2px gap between neighbouring bars, so fills never touch. */
 const BAR_GAP = 2;
@@ -43,6 +42,10 @@ const niceCeiling = (value: number) => {
  */
 export function GenerationBars({ loaded, spec, scenarioId, year }: Props) {
   const { story } = loaded;
+  const { ref, width: WIDTH, height: HEIGHT, unit } = useChartSize(REF_WIDTH, REF_HEIGHT);
+  const PAD = { top: 18 * unit, right: 4 * unit, bottom: 30 * unit, left: 38 * unit };
+  const plotWidth = WIDTH - PAD.left - PAD.right;
+  const plotHeight = HEIGHT - PAD.top - PAD.bottom;
 
   const model = useMemo(() => {
     const source = loaded.data[spec.source];
@@ -67,10 +70,10 @@ export function GenerationBars({ loaded, spec, scenarioId, year }: Props) {
     return { bars, ceiling: niceCeiling(peak), total };
   }, [loaded, spec.source, story, scenarioId, year]);
 
-  if (!model) return null;
+  if (!model) return <div ref={ref} />;
 
   const slot = plotWidth / model.bars.length;
-  const barWidth = Math.max(6, slot - BAR_GAP);
+  const barWidth = Math.max(6, slot - BAR_GAP * unit);
   const yOf = (value: number) => PAD.top + plotHeight - (value / model.ceiling) * plotHeight;
   const ticks = [0, model.ceiling / 2, model.ceiling];
 
@@ -83,23 +86,27 @@ export function GenerationBars({ loaded, spec, scenarioId, year }: Props) {
         </span>
       </figcaption>
 
+      <div ref={ref} className="chart__plot" style={{ aspectRatio: `${REF_WIDTH} / ${REF_HEIGHT}` }}>
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        width={WIDTH}
+        height={HEIGHT}
         role="img"
         aria-label={`${spec.title} by technology for ${year}`}
         className="chart__svg"
+        style={{ fontSize: 10 * unit }}
       >
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={PAD.left} x2={PAD.left + plotWidth} y1={yOf(tick)} y2={yOf(tick)} className="chart__grid" />
-            <text x={PAD.left - 6} y={yOf(tick) + 3} className="chart__axisLabel" textAnchor="end">
+            <text x={PAD.left - 6 * unit} y={yOf(tick) + 3 * unit} className="chart__axisLabel" textAnchor="end">
               {formatCompact(tick)}
             </text>
           </g>
         ))}
 
         {model.bars.map((bar, index) => {
-          const x = PAD.left + index * slot + BAR_GAP / 2;
+          const x = PAD.left + index * slot + (BAR_GAP * unit) / 2;
           const top = yOf(bar.value);
           const height = PAD.top + plotHeight - top;
           return (
@@ -111,23 +118,24 @@ export function GenerationBars({ loaded, spec, scenarioId, year }: Props) {
                   width={barWidth}
                   height={height}
                   // Rounded only at the data end; the baseline stays square.
-                  rx={Math.min(CORNER, height / 2)}
+                  rx={Math.min(CORNER * unit, height / 2)}
                   fill={bar.color}
                 >
                   <title>{`${bar.technology}: ${formatCompact(bar.value)} ${spec.unit ?? ''}`}</title>
                 </rect>
               ) : null}
               {/* Names sit under the bars, so identity is never colour alone. */}
-              <text x={x + barWidth / 2} y={HEIGHT - 16} className="chart__barLabel" textAnchor="middle">
+              <text x={x + barWidth / 2} y={HEIGHT - 16 * unit} className="chart__barLabel" textAnchor="middle">
                 {bar.technology}
               </text>
-              <text x={x + barWidth / 2} y={HEIGHT - 4} className="chart__barValue" textAnchor="middle">
+              <text x={x + barWidth / 2} y={HEIGHT - 4 * unit} className="chart__barValue" textAnchor="middle">
                 {bar.value > 0 ? formatCompact(bar.value) : '–'}
               </text>
             </g>
           );
         })}
       </svg>
+      </div>
     </figure>
   );
 }

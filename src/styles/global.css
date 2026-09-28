@@ -341,18 +341,32 @@ button { font: inherit; color: inherit; }
  * washed out by a glowing panel background. Panels are defined by their borders and
  * their text, never by a filled surface.
  */
-.table-view {
+.table-view,
+.calibration {
   --surface: #000;
   --surface-raised: #000;
   --surface-sunken: #000;
 
-  display: grid;
-  /* Never wider than the viewport allows, so a laptop can still show the map. */
-  grid-template-columns: min(var(--rail-width), 46vw) 1fr;
-  grid-template-areas: 'rail map';
   height: 100%;
-  position: relative;
+  background: #000;
 }
+
+/*
+ * The physical layout, left to right: rail | 80/20 bar gap | map area. The map
+ * itself fills the whole throw underneath, so the island's registration with the
+ * relief model depends only on the projector alignment, never on these widths.
+ *
+ * All widths are real pixels with no viewport cap: each maps onto a physical part
+ * of the table, and a cap would make the stored value and the drawn one disagree.
+ */
+.table-frame {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.table-frame__background { position: absolute; inset: 0; z-index: 0; }
 
 .story-map {
   grid-area: map;
@@ -365,30 +379,23 @@ button { font: inherit; color: inherit; }
 .maplibregl-canvas:focus { outline: none; }
 
 /*
- * The rail carries everything the operator touches.
- *
- * Content and puck zone split the height 50/50 -- a hard split, because the lower
- * half corresponds to a real region of the table rather than to however much
- * content happens to sit above it. The layer list runs full height down the edge
- * nearest the map, so it is beside the pucks that drive it.
+ * The rail: chart and readouts over the puck zone, both at the rail's full width.
+ * The split is a stored share of the height, because the puck zone corresponds to
+ * a real region of the table rather than to however much content sits above it.
  */
-.rail {
-  grid-area: rail;
+.table-frame__rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--legend-width);
-  /* minmax(0, 1fr), not 1fr: a bare 1fr refuses to shrink below its content. */
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas:
-    'top    legend'
-    'pucks  legend';
-  min-height: 0;
-  border-right: 1px solid var(--border);
-  background: var(--surface);
+  width: var(--rail-width);
+  grid-template-rows: calc(var(--chart-split) * 100%) minmax(0, 1fr);
+  background: #000;
 }
 
-.rail__top {
-  grid-area: top;
+.table-frame__top {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -396,6 +403,125 @@ button { font: inherit; color: inherit; }
   padding: 1.2rem 1.3rem 0.9rem;
   overflow: hidden;
 }
+
+/* The 80/20 extrusion. Black and empty: whatever is projected here lands on metal. */
+.table-frame__gap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--rail-width);
+  z-index: 2;
+  width: var(--bar-gap);
+  background: #000;
+}
+
+/* Everything that floats over the map: the layer list, panels, the status bar. */
+.table-frame__area {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: calc(var(--rail-width) + var(--bar-gap));
+  z-index: 3;
+  pointer-events: none;
+}
+
+.table-frame__area > * { pointer-events: auto; }
+
+/* ---- layout mode: shows the regions and makes their edges draggable ---- */
+
+.table-frame.is-editing .table-frame__top { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.table-frame.is-editing .puck-zone { outline: 2px dashed var(--accent-warm); outline-offset: -2px; }
+.table-frame.is-editing .puck-zone__hint { opacity: 1; color: var(--accent-warm); font-size: 0.9em; }
+
+.table-frame.is-editing .table-frame__gap {
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(45deg, #1b2230 0 8px, #0b0f16 8px 16px);
+}
+
+.table-frame__gapLabel {
+  color: var(--ink-secondary);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+}
+
+.layout-handle {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+}
+
+.layout-handle::before { content: ''; position: absolute; background: var(--accent); border-radius: 2px; }
+.layout-handle:hover::before, .layout-handle:active::before { background: #8fb5f2; }
+
+.layout-handle--rail,
+.layout-handle--gap {
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  cursor: col-resize;
+  transform: translateX(-50%);
+}
+
+.layout-handle--rail { left: var(--rail-width); }
+.layout-handle--gap { left: calc(var(--rail-width) + var(--bar-gap)); }
+.layout-handle--rail::before,
+.layout-handle--gap::before { top: 0; bottom: 0; width: 4px; }
+
+.layout-handle--split {
+  top: calc(var(--chart-split) * 100%);
+  left: 0;
+  width: var(--rail-width);
+  height: 18px;
+  cursor: row-resize;
+  transform: translateY(-50%);
+}
+
+.layout-handle--split::before { left: 0; right: 0; height: 4px; }
+
+/* Staggered, so the two vertical handles' labels never sit on top of each other. */
+.layout-handle--rail .layout-handle__label { position: absolute; top: 30%; }
+.layout-handle--gap .layout-handle__label { position: absolute; top: 70%; }
+
+.layout-handle__label {
+  position: relative;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  background: #000;
+  color: var(--ink);
+  font-size: 0.75em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.layout-panel {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 3rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 20rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: #000;
+}
+
+.layout-panel .align__lede, .layout-panel .align__note { margin: 0; }
+
+/* ---- rail content ---- */
 
 .rail__header { display: flex; flex-direction: column; gap: 0.2rem; }
 
@@ -412,18 +538,6 @@ button { font: inherit; color: inherit; }
 .rail__back:hover { color: var(--ink); }
 
 .rail__title { margin: 0; font-size: 1.45em; font-weight: 500; letter-spacing: -0.01em; }
-
-.rail__legend {
-  grid-area: legend;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-height: 0;
-  padding: 1.2rem 0.9rem 1rem;
-  overflow-y: auto;
-  border-left: 1px solid var(--border);
-  background: var(--surface-raised);
-}
 
 .rail__sectionTitle {
   margin: 0;
@@ -442,10 +556,64 @@ button { font: inherit; color: inherit; }
   font-size: 0.8em;
 }
 
+/* ---- the layer list, floating in the map area ---- */
+
+.floating-legend {
+  position: absolute;
+  top: var(--legend-y);
+  left: var(--legend-x);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: var(--legend-width);
+  max-height: calc(100% - var(--legend-y) - 3rem);
+  padding: 0.9rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #000;
+}
+
+.floating-legend.is-editing { border: 2px dashed var(--accent); overflow: visible; }
+
+.floating-legend__grip {
+  margin: -0.9rem -0.9rem 0.2rem;
+  padding: 0.4rem 0.9rem;
+  border-bottom: 1px solid var(--accent);
+  background: rgb(74 134 232 / 18%);
+  color: var(--ink);
+  cursor: move;
+  font-size: 0.75em;
+  font-variant-numeric: tabular-nums;
+  touch-action: none;
+  user-select: none;
+}
+
+.floating-legend__resize {
+  position: absolute;
+  top: 0;
+  right: -9px;
+  bottom: 0;
+  width: 18px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.floating-legend__resize::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  width: 4px;
+  height: 3rem;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+
 /* ------------------------------------------------------------- puck zone */
 
 .puck-zone {
-  grid-area: pucks;
   position: relative;
   border-top: 1px dashed var(--border-strong);
   /* Unlit: the pucks and their halos are the only thing the projector puts here. */
@@ -576,25 +744,33 @@ button { font: inherit; color: inherit; }
 }
 
 .chart__subtitle { color: var(--ink-muted); font-size: 0.8em; font-variant-numeric: tabular-nums; }
-.chart__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__svg { display: block; overflow: visible; }
 
-/* In the rail the chart shares a fixed half-height with the readouts, so the plot
-   gives up space before the legend beneath it does. */
-.rail__top .chart { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
-.rail__top .chart__svg { min-height: 0; flex: 1 1 auto; height: 100%; }
+/*
+ * The plot box is measured and the SVG laid out at its exact size, so the chart
+ * fills whatever it is given. The SVG is taken out of flow so it can never feed
+ * back into the size being measured.
+ */
+.chart__plot { position: relative; width: 100%; }
+.chart__plot > .chart__svg { position: absolute; inset: 0; }
+
+/* In the rail the chart takes all the height left under the readouts, at the
+   rail's full width, rather than keeping its designed shape. */
+.table-frame__top .chart { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.table-frame__top .chart__plot { flex: 1 1 auto; min-height: 4rem; aspect-ratio: auto !important; }
 
 .chart__total { color: var(--ink); font-size: 1.1em; font-weight: 400; font-variant-numeric: tabular-nums; }
 .chart__totalUnit { color: var(--ink-muted); font-size: 0.7em; }
 
-.chart__barLabel { fill: var(--ink-secondary); font-size: 9px; }
-.chart__barValue { fill: var(--ink-muted); font-size: 8.5px; font-variant-numeric: tabular-nums; }
+.chart__barLabel { fill: var(--ink-secondary); font-size: 0.9em; }
+.chart__barValue { fill: var(--ink-muted); font-size: 0.85em; font-variant-numeric: tabular-nums; }
 
 .chart__grid { stroke: var(--border); stroke-width: 1; }
-.chart__axisLabel { fill: var(--ink-muted); font-size: 9px; font-variant-numeric: tabular-nums; }
-.chart__seriesLabel { font-size: 9px; font-weight: 600; }
+.chart__axisLabel { fill: var(--ink-muted); font-size: 0.9em; font-variant-numeric: tabular-nums; }
+.chart__seriesLabel { font-size: 0.9em; font-weight: 600; }
 
 .chart__yearRule { stroke: var(--border-strong); stroke-width: 1.5; stroke-dasharray: 3 3; }
-.chart__yearLabel { fill: var(--ink); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chart__yearLabel { fill: var(--ink); font-size: 1em; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* A 2px surface ring keeps overlapping markers readable. */
 .chart__marker { stroke: var(--surface-raised); stroke-width: 2; }
@@ -664,10 +840,11 @@ button { font: inherit; color: inherit; }
 
 /* ------------------------------------------------------------ status bar */
 
+/* Lives in the map area, so it starts right of the bar and never over the pucks. */
 .status-bar {
   position: absolute;
   bottom: 0;
-  left: var(--rail-width);
+  left: 0;
   right: 0;
   z-index: 4;
   display: flex;
@@ -679,10 +856,11 @@ button { font: inherit; color: inherit; }
   font-size: 0.75em;
 }
 
-.status-bar__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #8a5a2a; }
+.status-bar__detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-bar__dot { flex: none; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #8a5a2a; }
 .status-bar__dot.is-connected { background: #3fa97f; }
 
-.status-bar__actions { display: flex; gap: 0.4rem; margin-left: auto; }
+.status-bar__actions { display: flex; flex: none; gap: 0.4rem; margin-left: auto; }
 
 .status-bar__action {
   padding: 0.1rem 0.6rem;
@@ -695,40 +873,16 @@ button { font: inherit; color: inherit; }
 }
 
 .status-bar__action:hover { border-color: var(--accent); color: var(--ink); }
+.status-bar__action.is-active { border-color: var(--accent); background: var(--accent); color: #06111f; }
 
 /* ----------------------------------------------------------- calibration */
 
-.calibration {
-  position: relative;
-  display: grid;
-  grid-template-columns: min(var(--rail-width), 46vw) 1fr;
-  height: 100%;
-  background: #000;
-}
-
-/* Mirrors the table's rail so the puck zone lands in the same physical place. */
-.calibration__rail {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  min-height: 0;
-  border-right: 1px solid var(--border);
-}
-
-.calibration__railTop { display: grid; place-items: center; padding: 1.5rem; }
-
 .calibration__zoneNote {
-  max-width: 26ch;
-  margin: 0;
+  max-width: 30ch;
+  margin: auto;
   color: var(--ink-muted);
   font-size: 0.9em;
   text-align: center;
-}
-
-/* The camera's field of view. Targets are projected here and nowhere else. */
-.calibration__field {
-  position: relative;
-  border-top: 1px dashed var(--border-strong);
-  overflow: hidden;
 }
 
 .calibration__target {
@@ -771,41 +925,63 @@ button { font: inherit; color: inherit; }
 }
 
 .calibration__panel {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  padding: 2rem 1.6rem;
-  border-left: 1px solid var(--border);
+  width: min(32rem, calc(100% - 3rem));
+  max-height: calc(100% - 3rem);
+  padding: 1.4rem 1.5rem;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: #000;
 }
 
 .calibration__title { margin: 0; font-size: 1.5em; font-weight: 500; }
 .calibration__step { margin: 0; color: var(--ink-secondary); }
 .calibration__seen { margin: 0; color: var(--ink-muted); font-size: 0.9em; }
-.calibration__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+.calibration__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.calibration__preview {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0b0f16;
+}
+
+.calibration__video, .calibration__markers { position: absolute; inset: 0; width: 100%; height: 100%; }
+.calibration__video { object-fit: fill; }
+
+.calibration__previewEmpty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  color: var(--ink-muted);
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.calibration__markerDot { fill: none; stroke: #3fa97f; stroke-width: 4; vector-effect: non-scaling-stroke; }
+.calibration__markerLabel { fill: #3fa97f; font-size: 48px; font-weight: 600; text-anchor: middle; }
 
 .calibration__status {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: auto 0 0;
+  margin: 0;
   color: var(--ink-muted);
   font-size: 0.8em;
 }
 
 .button:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* Smaller screens (a laptop during development) stack the rails over the map. */
-@media (max-width: 1100px) {
-  .table-view { grid-template-columns: 1fr; grid-template-areas: 'map'; }
-  .rail {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: min(96vw, 42rem);
-  }
-  .status-bar { left: 0; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0.01ms !important; }
@@ -813,85 +989,190 @@ button { font: inherit; color: inherit; }
 
 /* -------------------------------------------------------------- settings */
 
+/* The column scrolls, not the page, so the save bar stays pinned at the bottom. */
 .settings {
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: clamp(1.5rem, 5vh, 3rem) 1.5rem 4rem;
+  overflow: hidden;
+}
+
+.settings__inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+  padding: clamp(1.5rem, 5vh, 3rem) max(1.5rem, calc((100% - 52rem) / 2)) 2rem;
   overflow-y: auto;
 }
 
-.settings__header { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 2rem; }
+.settings__header { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
 .settings__title { margin: 0; font-size: 2em; font-weight: 300; letter-spacing: -0.02em; }
-.settings__lede { margin: 0; max-width: 46ch; color: var(--ink-secondary); }
+.settings__lede { margin: 0; max-width: 52ch; color: var(--ink-secondary); }
 
-.settings__section {
+.settings__card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.7rem;
-  padding: 1.3rem 0;
-  border-top: 1px solid var(--border);
+  gap: 0.85rem;
+  padding: 1.2rem 1.3rem 1.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.settings__card--quiet { background: none; }
+
+.settings__cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 1.9rem;
 }
 
 .settings__sectionTitle {
   margin: 0;
+  color: var(--ink);
+  font-size: 1.05em;
+  font-weight: 500;
+}
+
+.settings__groupTitle {
+  margin: 0.3rem 0 -0.3rem;
   color: var(--ink-muted);
-  font-size: 0.75em;
+  font-size: 0.72em;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-.settings__row { display: flex; flex-wrap: wrap; gap: 0.8rem; }
-.settings__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.settings__note { margin: 0; max-width: 60ch; color: var(--ink-muted); font-size: 0.85em; }
-
-.settings__message {
-  margin: 0;
-  padding: 0.6rem 0.9rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  color: var(--ink);
-  font-size: 0.9em;
+.settings__badge {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid #6b4a2a;
+  border-radius: 999px;
+  color: #e8b27a;
+  font-size: 0.75em;
 }
 
-.settings__choices { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+.settings__badge.is-ok { border-color: #2c6b52; color: #7fd4b0; }
+
+.settings__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.settings__row--end { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem; }
+.settings__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.settings__note { margin: 0; max-width: 66ch; color: var(--ink-muted); font-size: 0.85em; }
+.settings__note--warn { color: #e8b27a; }
+
+.settings__choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.6rem; }
 
 .choice {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.1rem 0.7rem;
-  padding: 0.7rem 0.9rem;
+  align-content: start;
+  gap: 0.15rem 0.7rem;
+  padding: 0.8rem 0.9rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
 }
 
 .choice:hover { border-color: var(--border-strong); }
-.choice.is-selected { border-color: var(--accent); background: var(--surface-raised); }
-.choice input { grid-row: span 2; align-self: center; accent-color: var(--accent); }
+.choice.is-selected { border-color: var(--accent); background: rgb(74 134 232 / 8%); }
+.choice input { grid-row: span 2; align-self: start; margin-top: 0.25rem; accent-color: var(--accent); }
 .choice__label { font-weight: 500; }
-.choice__hint { color: var(--ink-muted); font-size: 0.85em; }
+.choice__hint { color: var(--ink-muted); font-size: 0.82em; }
 
-.field { display: flex; flex-direction: column; gap: 0.25rem; }
-.field__label { color: var(--ink-muted); font-size: 0.8em; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.field--wide { flex: 1 1 16rem; }
+.field__label { color: var(--ink-secondary); font-size: 0.82em; }
+.field__hint { min-height: 1.2em; color: var(--ink-muted); font-size: 0.72em; font-variant-numeric: tabular-nums; }
+.field.is-invalid .field__hint { color: #f0a0aa; }
 
-.field__input {
-  min-width: 9rem;
-  padding: 0.45rem 0.6rem;
+.field__control {
+  display: flex;
+  align-items: center;
   border: 1px solid var(--border-strong);
   border-radius: 7px;
-  background: var(--surface-raised);
+  background: var(--surface);
+}
+
+.field__control:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgb(74 134 232 / 30%); }
+.field.is-invalid .field__control { border-color: #b0505e; }
+
+.field__input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface);
   color: var(--ink);
   font: inherit;
   font-size: 0.95em;
 }
 
-.field__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field__input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgb(74 134 232 / 30%); }
+
+.field__control .field__input { border: 0; background: none; box-shadow: none; }
+.field__input--number { font-variant-numeric: tabular-nums; }
+
+.field__unit {
+  flex: none;
+  padding-right: 0.65rem;
+  color: var(--ink-muted);
+  font-size: 0.85em;
+}
+
+select.field__input { cursor: pointer; }
 
 /* `label.button` wraps a hidden file input, so it needs the button's box. */
 label.button { display: inline-flex; align-items: center; }
+
+.button--quiet { padding: 0.3rem 0.7rem; border-color: transparent; font-size: 0.82em; }
+.button--quiet:hover { border-color: var(--border-strong); }
+.button--danger:hover { border-color: #b0505e; color: #f0b3bb; }
+
+.camera-preview { margin: 0; }
+
+.camera-preview__video {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0b0f16;
+  object-fit: contain;
+}
+
+.camera-preview__caption { margin-top: 0.3rem; color: var(--ink-muted); font-size: 0.78em; }
+
+/* Always visible, so it is never unclear whether a change has been saved. */
+.settings__bar {
+  flex: none;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.settings__bar.is-dirty { border-top-color: var(--accent); }
+
+.settings__barInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 0.8rem 1.5rem;
+}
+
+.settings__barStatus { margin-right: auto; color: var(--ink-muted); font-size: 0.88em; }
+.settings__bar.is-dirty .settings__barStatus { color: var(--ink); }
+.settings__barStatus.is-error { color: #f0b3bb; }
 
 /* --------------------------------------------------------- align overlay */
 

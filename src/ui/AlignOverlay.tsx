@@ -27,6 +27,9 @@ export function AlignOverlay({ onDone }: Props) {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      // Read live values: holding a key auto-repeats faster than React re-renders,
+      // and a render-time snapshot would make each repeat overwrite the last.
+      const settings = useSettings.getState();
       const step = event.shiftKey ? FINE : COARSE;
       const scaleStep = event.shiftKey ? 1.002 : SCALE_STEP;
 
@@ -58,10 +61,12 @@ export function AlignOverlay({ onDone }: Props) {
           settings.set('mapRotation', settings.mapRotation + ROTATE_STEP);
           break;
         case '0':
-          settings.set('mapScale', DEFAULT_SETTINGS.mapScale);
-          settings.set('mapOffsetX', DEFAULT_SETTINGS.mapOffsetX);
-          settings.set('mapOffsetY', DEFAULT_SETTINGS.mapOffsetY);
-          settings.set('mapRotation', DEFAULT_SETTINGS.mapRotation);
+          settings.apply({
+            mapScale: DEFAULT_SETTINGS.mapScale,
+            mapOffsetX: DEFAULT_SETTINGS.mapOffsetX,
+            mapOffsetY: DEFAULT_SETTINGS.mapOffsetY,
+            mapRotation: DEFAULT_SETTINGS.mapRotation,
+          });
           break;
         case 'Escape':
         case 'Enter':
@@ -75,7 +80,7 @@ export function AlignOverlay({ onDone }: Props) {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [settings, onDone]);
+  }, [onDone]);
 
   return (
     <div className="align">

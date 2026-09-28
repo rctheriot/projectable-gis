@@ -30,7 +30,17 @@ interface Props {
    * share one camera, so this moves all of them together.
    */
   align?: { scale: number; offsetX: number; offsetY: number; rotation: number };
+  /**
+   * Pixels on the left to keep the island out of when framing it -- on the table,
+   * the panels sit over that part of the throw. Capped at 60% of the width.
+   *
+   * Pass a constant, not the rail's live width: dragging the rail must never move
+   * the reference view the alignment is measured from.
+   */
+  reserveLeft?: number;
 }
+
+type Align = NonNullable<Props['align']>;
 
 function budgetFor(layer: StoryLayer, loaded: LoadedStory, scenarioId: string, year: number): number {
   return layer.fill.type === 'buildout' ? resolveBudget(layer.fill.budget, loaded.data, scenarioId, year) : 0;
@@ -149,13 +159,21 @@ function addStoryLayers(map: MapLibreMap, loaded: LoadedStory, scenarioId: strin
 /**
  * Applies projector alignment on top of the fitted view.
  *
- * Scale is a zoom offset (doubling the size is one zoom level), and the offset is
- * in screen pixels, which is how someone nudging the image against a physical model
- * actually thinks about it.
+ * Always recomputed from the fitted view, so nudges never accumulate. Scale is a
+ * zoom offset (doubling the size is one zoom level), and the offset is in screen
+ * pixels, which is how someone nudging the image against a physical model actually
+ * thinks about it.
+ *
+ * Used both when the map first loads and on every change: an earlier version
+ * applied only rotation and offset on load, so a saved scale was silently dropped
+ * after a page refresh.
  */
-function applyAlign(map: MapLibreMap, align: Props['align']) {
-  if (!align) return;
-  map.setBearing(align.rotation);
+function applyAlign(map: MapLibreMap, base: { zoom: number; centre: { lng: number; lat: number } }, align: Align) {
+  map.jumpTo({
+    center: base.centre,
+    zoom: base.zoom + Math.log2(Math.max(0.05, align.scale)),
+    bearing: align.rotation,
+  });
   if (align.offsetX || align.offsetY) map.panBy([align.offsetX, align.offsetY], { duration: 0 });
 }
 
@@ -185,7 +203,15 @@ function applyPaint(
   }
 }
 
-export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive = false, align }: Props) {
+export function StoryMap({
+  loaded,
+  year,
+  scenarioId,
+  activeLayerIds,
+  interactive = false,
+  align,
+  reserveLeft = 0,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const instanceRef = useRef<{ map: MapLibreMap; storyId: string } | null>(null);
@@ -265,10 +291,12 @@ export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive
 
         // Frame the raster: south-west then north-east corner. This is the
         // reference view; alignment is applied relative to it.
-        map.fitBounds([bl, tr], { padding: 24, animate: false });
+        const reserved = Math.round(Math.min(reserveLeft, container.clientWidth * 0.6));
+        map.fitBounds([bl, tr], { padding: { top: 24, bottom: 24, right: 24, left: 24 + reserved }, animate: false });
         baseZoomRef.current = map.getZoom();
         baseCentreRef.current = map.getCenter();
-        applyAlign(map, stateRef.current.align);
+        const currentAlign = stateRef.current.align;
+        if (currentAlign) applyAlign(map, { zoom: baseZoomRef.current, centre: baseCentreRef.current }, currentAlign);
 
         readyRef.current = true;
         paintedRef.current = new Set(
@@ -292,20 +320,13 @@ export function StoryMap({ loaded, year, scenarioId, activeLayerIds, interactive
         teardownRef.current = null;
       }, 0);
     };
-  }, [story, loaded, interactive]);
+  }, [story, loaded, interactive, reserveLeft]);
 
   // ---- projector alignment ----------------------------------------------
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current || !align || !baseCentreRef.current) return;
-
-    // Always recompute from the fitted view so nudges do not accumulate.
-    map.jumpTo({
-      center: baseCentreRef.current,
-      zoom: baseZoomRef.current + Math.log2(Math.max(0.05, align.scale)),
-      bearing: align.rotation,
-    });
-    if (align.offsetX || align.offsetY) map.panBy([align.offsetX, align.offsetY], { duration: 0 });
+    applyAlign(map, { zoom: baseZoomRef.current, centre: baseCentreRef.current }, align);
   }, [align]);
 
   // ---- visibility -------------------------------------------------------

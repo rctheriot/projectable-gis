@@ -3,6 +3,7 @@ import { useStore } from '@/state/useStore';
 import type { SourceKind } from '@/pucks/usePucks';
 import { useSettings } from '@/state/useSettings';
 import { ExploreView } from '@/ui/ExploreView';
+import { CalibrationView } from '@/ui/CalibrationView';
 import { Landing, type LaunchMode } from '@/ui/Landing';
 import { SettingsView } from '@/ui/SettingsView';
 import { TableView } from '@/ui/TableView';
@@ -52,7 +53,14 @@ export function App() {
 
   const [override] = useState(readSourceOverride);
   const [mode, setMode] = useState<LaunchMode>(readMode);
-  const [showSettings, setShowSettings] = useState(false);
+  /**
+   * Full-screen overlays. Calibration replaces the table outright rather than
+   * sitting on top of it, so the table's own camera is released first -- two
+   * streams on one device fight, and the table only reads a new calibration when
+   * its camera restarts. `returnTo` is where Done goes back to.
+   */
+  const [overlay, setOverlay] = useState<null | 'settings' | 'calibrate'>(null);
+  const [returnTo, setReturnTo] = useState<null | 'settings'>(null);
 
   const savedSource = useSettings((s) => s.puckSource);
   const savedTracker = useSettings((s) => s.trackerUrl);
@@ -78,7 +86,16 @@ export function App() {
     closeStory();
   };
 
-  if (showSettings) return <SettingsView onDone={() => setShowSettings(false)} />;
+  const openSettings = () => setOverlay('settings');
+  const calibrateFrom = (from: null | 'settings') => {
+    setReturnTo(from);
+    setOverlay('calibrate');
+  };
+
+  if (overlay === 'calibrate') return <CalibrationView onDone={() => setOverlay(returnTo)} />;
+  if (overlay === 'settings') {
+    return <SettingsView onDone={() => setOverlay(null)} onCalibrate={() => calibrateFrom('settings')} />;
+  }
 
   if (status === 'loading') {
     return (
@@ -95,7 +112,8 @@ export function App() {
         sourceKind={puckSource}
         websocketUrl={trackerUrl}
         onClose={close}
-        onOpenSettings={() => setShowSettings(true)}
+        onOpenSettings={openSettings}
+        onCalibrate={() => calibrateFrom(null)}
       />
     ) : (
       <ExploreView loaded={loaded} onClose={close} />
@@ -106,7 +124,7 @@ export function App() {
     <Landing
       error={error}
       onOpen={(story, next) => open(story.id, story.path, next)}
-      onOpenSettings={() => setShowSettings(true)}
+      onOpenSettings={openSettings}
     />
   );
 }
