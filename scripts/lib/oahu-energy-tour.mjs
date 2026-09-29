@@ -75,7 +75,7 @@ export function oahuEnergyTour({ maxSlopeDegrees }) {
         id: 'farmland',
         title: 'The same land as the farms',
         narration:
-          'Now the farmland, rated by the Land Study Bureau, with darker green the most productive. Nearly nine in ten acres of the solar land is rated agricultural land, and almost half of it is Class B, among the best soil on the island.',
+          'Now the farmland, rated by the Land Study Bureau, with the lightest green the most productive and the darkest the least. Nearly nine in ten acres of the solar land is rated agricultural land, and almost half of it is Class B, among the best soil on the island.',
         view: { year: 2045, scenario: 'e3', layers: ['agriculture', 'solar'] },
       },
       {
