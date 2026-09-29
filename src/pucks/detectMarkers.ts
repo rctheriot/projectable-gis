@@ -28,10 +28,30 @@ export interface Detection {
   rejected: Rejections;
 }
 
+/**
+ * Which printed markers to look for.
+ *
+ *   - `mip`: ARUCO_MIP_36h12, what `npm run markers` prints.
+ *   - `legacy`: the original ARUCO dictionary the 2022 app used, on the old black
+ *     plastic pucks.
+ *
+ * One family at a time: reading both would double the chances of noise decoding
+ * as a puck, for markers that are not on the table.
+ */
+export type MarkerSet = 'mip' | 'legacy';
+
 export interface DecodeOptions {
+  markerSet: MarkerSet;
   /** Most wrong pattern bits still accepted. 5 is the most that is always unambiguous. */
   maxBitErrors: number;
 }
+
+/**
+ * Most bit errors a legacy read may have, whatever the setting. The original
+ * dictionary's codes are only 3 bits apart, so correcting more than one bit could
+ * turn one puck into another. The old app accepted exact matches only.
+ */
+const LEGACY_MAX_BIT_ERRORS = 1;
 
 /**
  * Border cells allowed to read white. js-aruco2 rejects a marker if even one of
@@ -41,8 +61,6 @@ export interface DecodeOptions {
  */
 const BORDER_TOLERANCE = 3;
 
-const detector = new AR.Detector({ dictionaryName: 'ARUCO_MIP_36h12' });
-
 type Corners = { x: number; y: number }[];
 interface WarpedImage {
   width: number;
@@ -51,6 +69,15 @@ interface WarpedImage {
 }
 
 /** js-aruco2 internals used here; public in practice, missing from its types. */
+interface DetectorInternals {
+  candidates: unknown[];
+  dictionary: { codeList: string[]; markSize: number };
+  rotate(bits: number[][]): number[][];
+  rotate2(corners: Corners, rotation: number): Corners;
+  getMarker(warped: WarpedImage, candidate: Corners): ArucoMarker | null;
+  notTooNear(candidates: Corners[], minDistance: number): Corners[];
+}
+
 function centre(corners: Corners) {
   return {
     x: corners.reduce((sum, c) => sum + c.x, 0) / corners.length,
@@ -58,31 +85,11 @@ function centre(corners: Corners) {
   };
 }
 
-const internals = detector as unknown as {
-  candidates: unknown[];
-  dictionary: { codeList: string[]; markSize: number };
-  rotate(bits: number[][]): number[][];
-  rotate2(corners: Corners, rotation: number): Corners;
-  getMarker(warped: WarpedImage, candidate: Corners): ArucoMarker | null;
-  notTooNear(candidates: Corners[], minDistance: number): Corners[];
-};
-
-/*
- * Keep every candidate square. js-aruco2 drops one of any two squares whose
- * corners are within 10px, and keeps the *larger* -- but a printed marker always
- * produces two nested squares: its black border, and the edge of the white paper
- * one cell further out. Once a cell is under ~7px they are within 10px, so the real
- * marker was discarded and the paper outline decoded instead (and rejected, its
- * "border" being white). Markers smaller than ~56px were never read at all, and
- * near that size only intermittently. Duplicates are removed after decoding.
- */
-internals.notTooNear = (candidates) => candidates;
-
-const { codeList, markSize } = internals.dictionary;
-
-let options: DecodeOptions = { maxBitErrors: 5 };
-/** Squares rejected in the current frame, with where they were. */
-let rejects: { at: { x: number; y: number }; reason: 'border' | 'pattern'; distance?: number }[] = [];
+function hamming(a: string, b: string): number {
+  let distance = 0;
+  for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) distance += 1;
+  return distance;
+}
 
 /**
  * Whether a cell of the warped, thresholded marker is white.
@@ -103,69 +110,99 @@ function isWhite(image: WarpedImage, column: number, row: number, cell: number):
   return white * 2 > size * size;
 }
 
-function hamming(a: string, b: string): number {
-  let distance = 0;
-  for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) distance += 1;
-  return distance;
-}
+type AR_Detector = InstanceType<typeof AR.Detector>;
+
+/** Settings for the frame being decoded, and what was rejected in it. */
+let maxBitErrors = 5;
+let rejects: { at: { x: number; y: number }; reason: 'border' | 'pattern'; distance?: number }[] = [];
 
 /**
- * Replaces js-aruco2's per-candidate decode (same inputs, same output), with a
- * tolerant border check, centre sampling, and a record of why each square failed.
+ * A js-aruco2 detector for one dictionary, with its candidate filter and its
+ * per-square decode replaced.
  */
-internals.getMarker = (warped, candidate) => {
-  const cell = Math.floor(warped.width / markSize);
+function createDetector(dictionaryName: string): AR_Detector {
+  const detector = new AR.Detector({ dictionaryName });
+  const internals = detector as unknown as DetectorInternals;
+  const { codeList, markSize } = internals.dictionary;
 
-  let badBorder = 0;
-  for (let row = 0; row < markSize; row += 1) {
-    const step = row === 0 || row === markSize - 1 ? 1 : markSize - 1;
-    for (let column = 0; column < markSize; column += step) {
-      if (isWhite(warped, column, row, cell)) badBorder += 1;
+  /*
+   * Keep every candidate square. js-aruco2 drops one of any two squares whose
+   * corners are within 10px, and keeps the *larger* -- but a printed marker always
+   * produces two nested squares: its black border, and the edge of the white paper
+   * one cell further out. Once a cell is under ~7px they are within 10px, so the
+   * real marker was discarded and the paper outline decoded instead (and rejected,
+   * its "border" being white). Markers smaller than ~56px were never read at all,
+   * and near that size only intermittently. Duplicates are removed after decoding.
+   */
+  internals.notTooNear = (candidates) => candidates;
+
+  /*
+   * Replaces js-aruco2's per-candidate decode (same inputs, same output), with a
+   * tolerant border check, centre sampling, and a record of why each square failed.
+   */
+  internals.getMarker = (warped, candidate) => {
+    const cell = Math.floor(warped.width / markSize);
+
+    let badBorder = 0;
+    for (let row = 0; row < markSize; row += 1) {
+      const step = row === 0 || row === markSize - 1 ? 1 : markSize - 1;
+      for (let column = 0; column < markSize; column += step) {
+        if (isWhite(warped, column, row, cell)) badBorder += 1;
+      }
     }
-  }
-  if (badBorder > BORDER_TOLERANCE) {
-    rejects.push({ at: centre(candidate), reason: 'border' });
-    return null;
-  }
-
-  let bits: number[][] = [];
-  for (let row = 1; row < markSize - 1; row += 1) {
-    const line: number[] = [];
-    for (let column = 1; column < markSize - 1; column += 1) line.push(isWhite(warped, column, row, cell) ? 1 : 0);
-    bits.push(line);
-  }
-
-  // The marker may be seen at any of four rotations; keep the closest match.
-  let best = { id: -1, distance: Infinity, rotation: 0 };
-  for (let rotation = 0; rotation < 4; rotation += 1) {
-    const flat = bits.flat().join('');
-    for (let id = 0; id < codeList.length; id += 1) {
-      const distance = hamming(flat, codeList[id]!);
-      if (distance < best.distance) best = { id, distance, rotation };
+    if (badBorder > BORDER_TOLERANCE) {
+      rejects.push({ at: centre(candidate), reason: 'border' });
+      return null;
     }
-    if (best.distance === 0) break;
-    bits = internals.rotate(bits);
-  }
 
-  if (best.distance > options.maxBitErrors) {
-    rejects.push({ at: centre(candidate), reason: 'pattern', distance: best.distance });
-    return null;
-  }
+    let bits: number[][] = [];
+    for (let row = 1; row < markSize - 1; row += 1) {
+      const line: number[] = [];
+      for (let column = 1; column < markSize - 1; column += 1) line.push(isWhite(warped, column, row, cell) ? 1 : 0);
+      bits.push(line);
+    }
 
-  return {
-    id: best.id,
-    corners: internals.rotate2(candidate, 4 - best.rotation),
-    hammingDistance: best.distance,
+    // The marker may be seen at any of four rotations; keep the closest match.
+    let best = { id: -1, distance: Infinity, rotation: 0 };
+    for (let rotation = 0; rotation < 4; rotation += 1) {
+      const flat = bits.flat().join('');
+      for (let id = 0; id < codeList.length; id += 1) {
+        const distance = hamming(flat, codeList[id]!);
+        if (distance < best.distance) best = { id, distance, rotation };
+      }
+      if (best.distance === 0) break;
+      bits = internals.rotate(bits);
+    }
+
+    if (best.distance > maxBitErrors) {
+      rejects.push({ at: centre(candidate), reason: 'pattern', distance: best.distance });
+      return null;
+    }
+
+    return {
+      id: best.id,
+      corners: internals.rotate2(candidate, 4 - best.rotation),
+      hammingDistance: best.distance,
+    };
   };
-};
+
+  return detector;
+}
+
+/** Built on first use, so the family not in use costs nothing. */
+const detectors: Partial<Record<MarkerSet, AR_Detector>> = {};
+const DICTIONARIES: Record<MarkerSet, string> = { mip: 'ARUCO_MIP_36h12', legacy: 'ARUCO' };
 
 export function detectMarkers(
   image: { width: number; height: number; data: Uint8ClampedArray },
   decode: Partial<DecodeOptions> = {},
 ): Detection {
-  options = { ...options, ...decode };
+  const markerSet = decode.markerSet ?? 'mip';
+  const requested = decode.maxBitErrors ?? 5;
+  maxBitErrors = markerSet === 'legacy' ? Math.min(requested, LEGACY_MAX_BIT_ERRORS) : requested;
   rejects = [];
 
+  const detector = (detectors[markerSet] ??= createDetector(DICTIONARIES[markerSet]));
   const decoded = detector.detectImage(image.width, image.height, image.data);
 
   // Nested squares of one marker can both decode; keep the cleanest read of each.
@@ -200,7 +237,7 @@ export function detectMarkers(
 
   return {
     markers,
-    candidates: internals.candidates.length,
+    candidates: (detector as unknown as DetectorInternals).candidates.length,
     rejected: {
       border: failures.filter((f) => f.reason === 'border').length,
       pattern: misses.length,

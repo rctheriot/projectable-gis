@@ -66,6 +66,27 @@ describe('detectMarkers', () => {
     expect(detection.rejected).toMatchObject({ pattern: 0 });
   });
 
+  describe('old plastic pucks (original ARUCO)', () => {
+    it.each([384, 6, 7, 11])('reads legacy id %i', (id) => {
+      const { markers } = detectMarkers(renderMarker('ARUCO', id, 6), { markerSet: 'legacy' });
+      expect(markers.map((m) => m.id)).toEqual([id]);
+    });
+
+    it.each([3, 5, 8, 14])('reads a legacy marker with %ipx cells', (cell) => {
+      const { markers } = detectMarkers(renderMarker('ARUCO', 384, cell), { markerSet: 'legacy' });
+      expect(markers.map((m) => m.id)).toEqual([384]);
+    });
+
+    it('never corrects more than one bit, whatever the setting', () => {
+      const damaged = renderMarker('ARUCO', 384, 7, { flipBits: [0, 12] });
+      expect(detectMarkers(damaged, { markerSet: 'legacy', maxBitErrors: 8 }).markers).toEqual([]);
+    });
+
+    it('does not read new markers while set to old pucks', () => {
+      expect(detectMarkers(renderMarker('ARUCO_MIP_36h12', 0, 7), { markerSet: 'legacy' }).markers).toEqual([]);
+    });
+  });
+
   it('finds nothing in a blank frame', () => {
     const data = new Uint8ClampedArray(480 * 320 * 4).fill(200);
     expect(detectMarkers({ width: 480, height: 320, data })).toMatchObject({ markers: [], candidates: 0 });

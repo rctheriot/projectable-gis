@@ -95,6 +95,12 @@ one) and samples each cell's centre rather than its whole area.
 
 **Tracking settings** (Settings → Camera → Tracking):
 
+- **Marker type**: *Printed markers* (ARUCO_MIP_36h12, what `npm run markers`
+  prints, IDs 0-3) or *Old plastic pucks* (the 2022 pucks, original ARUCO
+  dictionary). Old IDs map onto the roles every story binds: 384 dial, 6 layer,
+  7 add/remove, 11 scenario. Old markers accept at most one wrong bit -- that
+  dictionary's codes are only 3 bits apart.
+
 - **Detection width** (default 960px). Frames are scaled to this before detection;
   smaller is faster. The status bar reports how big markers appear
   (`markers ~48px`); aim for roughly 30px or more.

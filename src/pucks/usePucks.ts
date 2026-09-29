@@ -42,6 +42,7 @@ export function usePucks(bindings: PuckBinding[], kind: SourceKind, websocketUrl
   const cameraHeight = useSettings((s) => s.cameraHeight);
   const detectionWidth = useSettings((s) => s.detectionWidth);
   const maxBitErrors = useSettings((s) => s.maxBitErrors);
+  const markerSet = useSettings((s) => s.markerSet);
   // A puck unseen for this long is considered lifted: it disappears and its
   // rotation restarts cleanly when it is next seen.
   const holdMs = useSettings((s) => s.holdMs);
@@ -57,13 +58,14 @@ export function usePucks(bindings: PuckBinding[], kind: SourceKind, websocketUrl
           height: cameraHeight,
           detectionWidth,
           maxBitErrors,
+          markerSet,
         });
       case 'websocket':
         return new WebSocketPuckSource(websocketUrl);
       default:
         return new KeyboardPuckSource(bindings);
     }
-  }, [kind, websocketUrl, bindings, cameraDeviceId, cameraWidth, cameraHeight, detectionWidth, maxBitErrors]);
+  }, [kind, websocketUrl, bindings, cameraDeviceId, cameraWidth, cameraHeight, detectionWidth, maxBitErrors, markerSet]);
 
   // Rotation state is per marker and must survive re-renders.
   const rotationsRef = useRef(new Map<number, RotationAccumulator>());

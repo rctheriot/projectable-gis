@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { detectMarkers, type DetectedMarker, type Rejections } from '@/pucks/detectMarkers';
+import { detectMarkers, type DetectedMarker, type MarkerSet, type Rejections } from '@/pucks/detectMarkers';
 
 export type { DetectedMarker } from '@/pucks/detectMarkers';
 
@@ -11,9 +11,8 @@ export type { DetectedMarker } from '@/pucks/detectMarkers';
  * stalled the UI on every frame. Frames arrive already scaled to the configured
  * detection width (see `Settings.detectionWidth`).
  *
- * ARUCO_MIP_36h12 is the dictionary: 36 bits with a minimum Hamming distance of 12,
- * which rejects false positives far better than the original ARUCO dictionary the
- * old app used.
+ * Which markers it looks for is a setting: ARUCO_MIP_36h12 for newly printed pucks,
+ * or the original ARUCO dictionary on the old plastic ones (see `MarkerSet`).
  */
 
 interface DetectRequest {
@@ -21,6 +20,7 @@ interface DetectRequest {
   bitmap: ImageBitmap;
   /** Echoed back so the main thread can drop stale results. */
   frameId: number;
+  markerSet: MarkerSet;
   maxBitErrors: number;
 }
 
@@ -63,7 +63,10 @@ self.onmessage = (event: MessageEvent<DetectRequest>) => {
   // The bitmap is owned by this worker; releasing it immediately keeps memory flat.
   bitmap.close();
 
-  const { markers, candidates, rejected } = detectMarkers(image, { maxBitErrors: message.maxBitErrors });
+  const { markers, candidates, rejected } = detectMarkers(image, {
+    markerSet: message.markerSet,
+    maxBitErrors: message.maxBitErrors,
+  });
 
   const response: DetectResponse = {
     type: 'markers',
