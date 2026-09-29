@@ -1,0 +1,53 @@
+{
+  "voice": {
+    "model": "gpt-4o-mini-tts",
+    "voice": "marin",
+    "delivery": "You are the narrator of a museum exhibit about Hawaiʻi. Speak warmly and clearly, at an unhurried pace, like a documentary narrator addressing visitors standing around a map table. Pronounce Hawaiian words correctly: Oʻahu is oh-AH-hoo, Hawaiʻi is hah-VAI-ee, Waiʻanae is vai-ah-NAI, Koʻolau is koh-oh-LAU. Pause briefly at the ends of sentences."
+  },
+  "steps": {
+    "intro": {
+      "file": "intro.mp3",
+      "hash": "3cf45bad03462005"
+    },
+    "baseline": {
+      "file": "baseline.mp3",
+      "hash": "bbbb7127e1d08c3c"
+    },
+    "resource": {
+      "file": "resource.mp3",
+      "hash": "858b0f56c3f805e0"
+    },
+    "buildout": {
+      "file": "buildout.mp3",
+      "hash": "b39a8d49ce261665"
+    },
+    "land": {
+      "file": "land.mp3",
+      "hash": "8a5cc743de824e63"
+    },
+    "farmland": {
+      "file": "farmland.mp3",
+      "hash": "3a2329c9f81adf6d"
+    },
+    "slope": {
+      "file": "slope.mp3",
+      "hash": "0af2f3c42f06cbf6"
+    },
+    "too-steep": {
+      "file": "too-steep.mp3",
+      "hash": "f1a95ff0cfe55135"
+    },
+    "constraints": {
+      "file": "constraints.mp3",
+      "hash": "55a94f5222fa3eba"
+    },
+    "rooftops": {
+      "file": "rooftops.mp3",
+      "hash": "cac4514f6ec07975"
+    },
+    "close": {
+      "file": "close.mp3",
+      "hash": "7232b60e3389882d"
+    }
+  }
+}

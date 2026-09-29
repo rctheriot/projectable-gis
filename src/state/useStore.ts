@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 import type { LoadedStory } from '@/story/loadStory';
 import { loadStory } from '@/story/loadStory';
+import type { TourView } from '@/story/types';
 
 export type Status = 'idle' | 'loading' | 'ready' | 'error';
+
+/** Where a narrated tour is. While it is anything but `idle`, pucks are ignored. */
+export type TourStatus = 'idle' | 'playing' | 'paused';
 
 interface StoreState {
   status: Status;
@@ -16,6 +20,9 @@ interface StoreState {
   /** Which layer the "add/remove" puck will toggle. */
   armedLayerIndex: number;
 
+  tourStatus: TourStatus;
+  tourStep: number;
+
   openStory: (path: string) => Promise<void>;
   closeStory: () => void;
 
@@ -26,6 +33,12 @@ interface StoreState {
   stepArmedLayer: (delta: number) => void;
   toggleArmedLayer: () => void;
   setLayerActive: (id: string, active: boolean) => void;
+
+  /** Shows exactly what a tour step describes. */
+  applyView: (view: TourView) => void;
+  /** Back to how the story opens: first year, first scenario, default layers. */
+  resetView: () => void;
+  setTour: (status: TourStatus, step?: number) => void;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -40,6 +53,8 @@ export const useStore = create<StoreState>((set, get) => ({
   scenarioIndex: 0,
   activeLayerIds: new Set(),
   armedLayerIndex: 0,
+  tourStatus: 'idle',
+  tourStep: 0,
 
   openStory: async (path) => {
     set({ status: 'loading', error: null });
@@ -52,13 +67,16 @@ export const useStore = create<StoreState>((set, get) => ({
         scenarioIndex: 0,
         armedLayerIndex: 0,
         activeLayerIds: new Set(loaded.story.layers.filter((l) => l.defaultActive).map((l) => l.id)),
+        tourStatus: 'idle',
+        tourStep: 0,
       });
     } catch (error) {
       set({ status: 'error', error: error instanceof Error ? error.message : String(error) });
     }
   },
 
-  closeStory: () => set({ status: 'idle', loaded: null, error: null, activeLayerIds: new Set() }),
+  closeStory: () =>
+    set({ status: 'idle', loaded: null, error: null, activeLayerIds: new Set(), tourStatus: 'idle', tourStep: 0 }),
 
   stepYear: (delta) => {
     const { loaded, year } = get();
@@ -111,6 +129,31 @@ export const useStore = create<StoreState>((set, get) => ({
     else next.delete(id);
     set({ activeLayerIds: next });
   },
+
+  applyView: (view) => {
+    const { loaded, year, scenarioIndex } = get();
+    if (!loaded) return;
+    const { min, max } = loaded.story.years;
+    const scenario = view.scenario ? loaded.story.scenarios.findIndex((s) => s.id === view.scenario) : -1;
+    set({
+      year: view.year === undefined ? year : clamp(view.year, min, max),
+      scenarioIndex: scenario >= 0 ? scenario : scenarioIndex,
+      activeLayerIds: new Set(view.layers),
+    });
+  },
+
+  resetView: () => {
+    const { loaded } = get();
+    if (!loaded) return;
+    set({
+      year: loaded.story.years.min,
+      scenarioIndex: 0,
+      armedLayerIndex: 0,
+      activeLayerIds: new Set(loaded.story.layers.filter((l) => l.defaultActive).map((l) => l.id)),
+    });
+  },
+
+  setTour: (tourStatus, step) => set(step === undefined ? { tourStatus } : { tourStatus, tourStep: step }),
 }));
 
 /** Convenience selectors. */

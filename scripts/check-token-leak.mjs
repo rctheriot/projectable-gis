@@ -1,5 +1,6 @@
 /**
- * Proves the HCDP token is not in the built bundle.
+ * Proves no build-time secret -- the HCDP token, the text-to-speech key -- is in
+ * the built bundle.
  *
  * The credential is shared with another app under the name `VITE_MESONET_API_KEY`,
  * and the `VITE_` prefix is exactly how Vite marks a variable as safe to inline
@@ -15,6 +16,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { PROJECT_ROOT } from './lib/paths.mjs';
 import { readToken } from './lib/hcdp.mjs';
+import { readTtsConfig } from './lib/narration.mjs';
 
 async function* walk(dir) {
   for (const entry of await readdir(dir)) {
@@ -25,8 +27,9 @@ async function* walk(dir) {
 }
 
 async function main() {
-  const token = await readToken(PROJECT_ROOT);
-  if (!token) {
+  // Every build-time secret: the HCDP token and the text-to-speech key.
+  const secrets = [await readToken(PROJECT_ROOT), (await readTtsConfig())?.key].filter(Boolean);
+  if (secrets.length === 0) {
     console.log('No token configured; nothing to check.');
     return;
   }
@@ -36,7 +39,7 @@ async function main() {
   const offenders = [];
   for await (const file of walk(path.join(PROJECT_ROOT, 'src'))) {
     const text = await readFile(file, 'utf8');
-    if (/import\.meta\.env\.[A-Z_]*MESONET|import\.meta\.env\.HCDP/.test(text)) {
+    if (/import\.meta\.env\.[A-Z_]*MESONET|import\.meta\.env\.HCDP|import\.meta\.env\.(API_KEY|OPENAI|LITELLM)/.test(text)) {
       offenders.push(path.relative(PROJECT_ROOT, file));
     }
   }
@@ -45,7 +48,8 @@ async function main() {
   if (existsSync(dist)) {
     for await (const file of walk(dist)) {
       if (!/\.(js|css|html|json|map)$/.test(file)) continue;
-      if ((await readFile(file, 'utf8')).includes(token)) {
+      const text = await readFile(file, 'utf8');
+      if (secrets.some((secret) => text.includes(secret))) {
         offenders.push(path.relative(PROJECT_ROOT, file));
       }
     }
@@ -56,7 +60,7 @@ async function main() {
   if (offenders.length > 0) {
     console.error('\nToken would ship to visitors. Found in:');
     for (const file of offenders) console.error(`  ${file}`);
-    console.error('\nThe HCDP token is build-time only. Remove the reference.');
+    console.error('\nThese keys are build-time only. Remove the reference.');
     process.exit(1);
   }
 

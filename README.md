@@ -203,6 +203,48 @@ inventing years the published data does not support &mdash; the State's four sce
 were tied to 2100 in 2017 and the 2022 guidance revised the timing without
 republishing the maps.
 
+### Narrated tours (experimental)
+
+A story can carry a **tour**: a narrated walk-through a visitor starts with one
+press, as at a museum exhibit. **Play the story** sits beside the title; Space
+toggles play/pause (so a single USB button can drive it) and Escape stops.
+
+- Each step states the whole view -- year, scenario, exactly which layers -- and
+  can sweep the dial across its narration. The map camera never moves, so the
+  projection stays registered to the relief model.
+- On the table the story takes over the **puck zone** while it plays; puck input
+  is ignored (and nothing banks) until it ends, when the pucks come back on the
+  final frame. Stop resets the view for the next visitor.
+- Captions show the full narration.
+
+The first tour is on **Oahu Energy Goals** (`scripts/lib/oahu-energy-tour.mjs`),
+about solar and the land it competes for. Its script is a **draft**, with every
+figure's derivation noted in the file.
+
+**Narration audio** is recorded at build time, never by visitors:
+
+```bash
+# scripts/text-to-speech/.env (gitignored): LITELLM_URL, API_KEY
+# optional: TTS_MODEL (default gpt-4o-mini-tts), TTS_VOICE (default marin)
+npm run narrate -- --dry-run      # what would be recorded
+npm run narrate                   # record changed steps only
+npm run prepare-story -- --only oahu-energy
+```
+
+Recordings live in `assets/narration/<story>/` and are committed. The build bundles
+a recording only while it matches its step's current text; edit a sentence and that
+step falls back to the browser's own speech until it is re-recorded, so the voice
+never disagrees with the caption.
+
+### Terrain slope
+
+**Terrain Slope** and **Too Steep for Solar** are computed at build time from USGS
+3DEP elevation (public ImageServer, no key), fetched at the base map's exact corners
+and pixel size and cached in `.cache/`. Slope uses Horn's method with the Web
+Mercator pixel scaled back to ground metres; at full resolution it agrees with the
+service's own slope to a median 0.25°. The threshold is one constant,
+`SOLAR_MAX_SLOPE_DEGREES` in `scripts/lib/oahu-story.mjs`.
+
 ### Story cover images
 
 A story names a photograph with `cover`, relative to the project root. The build

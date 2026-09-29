@@ -127,6 +127,162 @@
       "color": "#AC346A"
     }
   ],
+  "tour": {
+    "title": "Sun, Land and the 2045 Goal",
+    "draft": true,
+    "steps": [
+      {
+        "id": "intro",
+        "title": "Oʻahu, 2045",
+        "narration": "This is Oʻahu, home to about two in every three people in Hawaiʻi. In 2015, Hawaiʻi became the first state to set a law requiring all of its electricity to come from renewable sources, by 2045. This is the story of what that goal asks of the land.",
+        "view": {
+          "year": 2016,
+          "scenario": "e3",
+          "layers": []
+        },
+        "audio": "stories/oahu-energy/tour/intro.mp3"
+      },
+      {
+        "id": "baseline",
+        "title": "Where we started",
+        "narration": "In 2016, eighty-three percent of the island’s electricity came from fossil fuel shipped in from overseas. The teal patches are the renewable plants already running, and the yellow-green lines are the transmission grid that any new power has to reach.",
+        "view": {
+          "year": 2016,
+          "scenario": "e3",
+          "layers": [
+            "existing-re",
+            "transmission"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/baseline.mp3"
+      },
+      {
+        "id": "resource",
+        "title": "The solar resource",
+        "narration": "Sunlight is the island’s largest energy resource. The white shows land a national laboratory study found suitable for utility-scale solar: about one hundred and five square kilometres of it.",
+        "view": {
+          "year": 2016,
+          "scenario": "e3",
+          "layers": [
+            "solar"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/resource.mp3"
+      },
+      {
+        "id": "buildout",
+        "title": "Building toward 2045",
+        "narration": "Watch the years pass. In this scenario, solar farms, in orange, fill the sunniest sites first. By 2045, fossil fuel is gone, and utility-scale solar supplies about forty-three percent of the island’s power.",
+        "view": {
+          "year": 2016,
+          "scenario": "e3",
+          "layers": [
+            "solar"
+          ]
+        },
+        "sweepTo": 2045,
+        "audio": "stories/oahu-energy/tour/buildout.mp3"
+      },
+      {
+        "id": "land",
+        "title": "Ten thousand acres",
+        "narration": "That takes land. The solid orange covers about forty-two square kilometres, more than ten thousand acres, which is forty percent of all the suitable land the study found.",
+        "view": {
+          "year": 2045,
+          "scenario": "e3",
+          "layers": [
+            "solar"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/land.mp3"
+      },
+      {
+        "id": "farmland",
+        "title": "The same land as the farms",
+        "narration": "Now the farmland, rated by the Land Study Bureau, with the lightest green the most productive and the darkest the least. Nearly nine in ten acres of the solar land is rated agricultural land, and almost half of it is Class B, among the best soil on the island.",
+        "view": {
+          "year": 2045,
+          "scenario": "e3",
+          "layers": [
+            "agriculture",
+            "solar"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/farmland.mp3"
+      },
+      {
+        "id": "slope",
+        "title": "Why the flat land",
+        "narration": "Solar and farming want the same thing: flat ground. This is the slope of the island, dark where it is flat and bright where it is steep. The Waiʻanae and Koʻolau ranges rise sharply on either side of the central plain.",
+        "view": {
+          "year": 2045,
+          "scenario": "e3",
+          "layers": [
+            "slope"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/slope.mp3"
+      },
+      {
+        "id": "too-steep",
+        "title": "Too steep to build",
+        "narration": "Hatched in red is everything steeper than 20 degrees, too steep for rows of solar panels. That is more than a third of Oʻahu. The study’s solar sites sit almost entirely on the flat land that is left.",
+        "view": {
+          "year": 2045,
+          "scenario": "e3",
+          "layers": [
+            "too-steep",
+            "solar"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/too-steep.mp3"
+      },
+      {
+        "id": "constraints",
+        "title": "What remains",
+        "narration": "Set aside the steep ground, the parks, and the government and military land across central Oʻahu, and the flat land that remains is wanted by farms, by homes, and by power plants, all at once.",
+        "view": {
+          "year": 2045,
+          "scenario": "e3",
+          "layers": [
+            "too-steep",
+            "parks",
+            "government",
+            "solar"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/constraints.mp3"
+      },
+      {
+        "id": "rooftops",
+        "title": "Power without new land",
+        "narration": "That is why rooftops matter. In this scenario, rooftop and other small-scale solar supplies about thirty-seven percent of the island’s electricity by 2045, on land that is already built on.",
+        "view": {
+          "year": 2045,
+          "scenario": "e3",
+          "layers": [
+            "der"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/rooftops.mp3"
+      },
+      {
+        "id": "close",
+        "title": "Every path is a choice about land",
+        "narration": "Every path to 2045 is a choice about how this island uses its land. Turn the pucks to explore the other scenarios, and see how the map changes.",
+        "view": {
+          "year": 2045,
+          "scenario": "e3",
+          "layers": [
+            "agriculture",
+            "too-steep",
+            "solar"
+          ]
+        },
+        "audio": "stories/oahu-energy/tour/close.mp3"
+      }
+    ]
+  },
   "layers": [
     {
       "id": "agriculture",
@@ -180,6 +336,83 @@
       "lineWidth": 1
     },
     {
+      "id": "slope",
+      "name": "Terrain Slope",
+      "description": "How steep the ground is, from USGS 3DEP elevation at the base map’s resolution: dark is flat, bright is steep. Oahu’s flat land is the leeward plains and the central plateau — the same places the island farms, builds and lives.",
+      "render": "raster",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#8878F0",
+      "opacity": 0.75,
+      "ramp": [
+        "#1B1440",
+        "#4B3A9E",
+        "#8878F0",
+        "#C9C0FF",
+        "#F2EEFF"
+      ],
+      "frames": [
+        {
+          "value": 2016,
+          "image": "stories/oahu-energy/rasters/slope.webp"
+        }
+      ],
+      "corners": [
+        [
+          -158.281,
+          21.71
+        ],
+        [
+          -157.647,
+          21.71
+        ],
+        [
+          -157.647,
+          21.252
+        ],
+        [
+          -158.281,
+          21.252
+        ]
+      ]
+    },
+    {
+      "id": "too-steep",
+      "name": "Too Steep for Solar (>20°)",
+      "description": "Ground steeper than 20°, hatched out: too steep to terrace for utility-scale panels. What is left is the flat and gently sloping land every other use also wants.",
+      "render": "raster",
+      "fill": {
+        "type": "static"
+      },
+      "color": "#E0403A",
+      "opacity": 0.9,
+      "frames": [
+        {
+          "value": 2016,
+          "image": "stories/oahu-energy/rasters/too-steep.webp"
+        }
+      ],
+      "corners": [
+        [
+          -158.281,
+          21.71
+        ],
+        [
+          -157.647,
+          21.71
+        ],
+        [
+          -157.647,
+          21.252
+        ],
+        [
+          -158.281,
+          21.252
+        ]
+      ]
+    },
+    {
       "id": "solar",
       "name": "Utility-Scale Solar",
       "description": "NREL technical potential for utility-scale solar, filling best-irradiance-first as each year’s PV generation target grows.",
@@ -217,7 +450,7 @@
           ],
           "constant": 8760
         },
-        "unbuiltColor": "rgba(232, 137, 46, 0.16)"
+        "unbuiltColor": "rgba(255, 255, 255, 0.45)"
       },
       "color": "#E8892E",
       "lineWidth": 0.2,
