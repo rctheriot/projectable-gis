@@ -82,6 +82,32 @@ npm run markers           # writes markers/<story>/<id>-<label>.svg at true size
 npm run markers -- --size 60
 ```
 
+**Why small markers used to flicker.** Every printed marker yields two nested
+squares: its black border and the edge of the white paper one cell further out.
+js-aruco2 discards one of any two squares whose corners are within 10px and keeps
+the *larger* -- so once a marker cell was under ~7px (a marker under ~56px in the
+camera frame), the real marker was thrown away and the paper outline decoded
+instead, which always fails. Near that size it failed on some frames and not
+others. The decoder (`src/pucks/detectMarkers.ts`) now keeps every square, decodes
+them all, and removes duplicates afterwards; markers read down to ~3px cells. It
+also tolerates up to 3 glare-washed border cells (js-aruco2 rejected a marker for
+one) and samples each cell's centre rather than its whole area.
+
+**Tracking settings** (Settings → Camera → Tracking):
+
+- **Detection width** (default 960px). Frames are scaled to this before detection;
+  smaller is faster. The status bar reports how big markers appear
+  (`markers ~48px`); aim for roughly 30px or more.
+- **Hold** (default 600ms). A puck the camera misses keeps its last position this
+  long before it counts as lifted, so a dropped frame does not blink it out or
+  restart its rotation.
+- **Bit errors allowed** (default 5). Up to 5 of a marker's 36 cells may be misread.
+  More reads blurrier markers but risks one puck being mistaken for another.
+
+The status bar also says how often each marker was read over the last two seconds
+(`read #0 94%`), how many squares were found, and why the rest were not read:
+*border* (glare or blur on the edge) or *pattern* (with how many bits it was off).
+
 Print at **100% scale** on **matte** stock — gloss throws the projector's light
 straight back into the camera. The dashed line is the cut line; the quiet zone
 around the marker is part of the tag and must survive the cut.
@@ -104,8 +130,8 @@ everything that describes the physical installation, persisted to this browser's
 - calibration: calibrate, export, import, clear
 
 Edits are a draft until **Save** (or Cmd/Ctrl+S); leaving with unsaved changes asks
-first. Layout and alignment are easier to set on the table itself -- the **Layout**
-and **Align** buttons in the status bar -- and those save as you go.
+first. Layout and alignment are easier to set on the table itself -- the **Adjust**
+button in the status bar -- and those save as you go.
 
 None of it is in the repository, because the same build runs on a laptop and on the
 table and only the machine knows which camera it has. A `?pucks=` URL parameter
@@ -367,14 +393,16 @@ gap** is the 80/20 extrusion that crosses the table between the puck area and th
 model: it is painted black and nothing is placed in it. The layer list floats in the
 map area, beside the island it describes.
 
-**Layout** in the status bar shows the regions and makes their edges draggable: the
+**Adjust** in the status bar shows the regions and makes their edges draggable: the
 rail's width, the bar gap, and the chart/puck split, plus the layer list's position
-and width. Changes save as you go.
+and width. The same panel aligns the map to the relief model (arrow keys or its
+buttons to move, `+`/`-` to scale, `[`/`]` to rotate, Shift for fine steps).
+Changes save as you go.
 
 The map fills the **whole throw underneath** the panels rather than taking a column,
 so the island's registration with the relief model depends only on the projector
 alignment -- dragging a divider never moves the island. It is framed to the right of
-a fixed 1160px reserve, then aligned with **Align**.
+a fixed 1160px reserve, then aligned with **Adjust**.
 
 The lower part of the rail is the puck zone, kept deliberately clear of interface.
 **Tracker coordinates are normalised across that element, not the viewport**, so

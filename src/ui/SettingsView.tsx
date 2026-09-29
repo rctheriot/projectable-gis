@@ -161,7 +161,7 @@ function CameraPreview({ deviceId, width, height }: { deviceId: string; width: n
  *
  * Edits are held in a draft until Save, so a half-typed number never reaches the
  * table. Layout and alignment can also be adjusted live on the table itself (the
- * Layout and Align buttons); those save as you go, and show up here.
+ * Adjust button); those save as you go, and show up here.
  */
 export function SettingsView({ onDone, onCalibrate }: Props) {
   const stored = useSettings();
@@ -390,8 +390,28 @@ export function SettingsView({ onDone, onCalibrate }: Props) {
               {number('cameraHeight', 'Capture height', { min: 120, max: 4320, unit: 'px' })}
             </div>
             <p className="settings__note">
-              Requested, not guaranteed &mdash; the camera gives what it can. Detection runs at whatever it returns,
-              so higher is better until the frame rate drops.
+              Requested, not guaranteed &mdash; the camera gives what it can. 1920&times;1080 at 30fps is a good
+              target; the frame is scaled down for detection anyway.
+            </p>
+
+            <h3 className="settings__groupTitle">Tracking</h3>
+            <div className="settings__row">
+              {number('detectionWidth', 'Detection width', { min: 320, max: 3840, unit: 'px', step: 80 })}
+              {number('holdMs', 'Hold lost pucks for', { min: 0, max: 5000, unit: 'ms', step: 50 })}
+              {number('maxBitErrors', 'Bit errors allowed', { min: 0, max: 8, unit: 'bits' })}
+            </div>
+            <p className="settings__note">
+              <strong>Detection width</strong> is the size frames are scaled to before looking for markers. The
+              status bar shows how big markers appear (&ldquo;markers ~48px&rdquo;); aim for roughly 30px or more.
+              If they read smaller, raise this; if much larger, lowering it makes detection faster. <strong>Hold</strong> keeps a puck in place through brief dropouts; raise it if pucks blink,
+              lower it if lifting a puck takes too long to register.
+            </p>
+            <p className="settings__note">
+              <strong>Bit errors allowed</strong>: each marker is 36 cells, and a read may get this many wrong and
+              still count. Up to 5 is always safe. 6&ndash;8 reads more blurry markers but can occasionally mistake
+              one puck for another. The status bar says why squares were not read: <em>border</em> means glare or
+              blur on the marker&rsquo;s edge; <em>pattern</em> with &ldquo;closest N bits off&rdquo; tells you
+              whether raising this would help.
             </p>
           </section>
         ) : null}
@@ -481,7 +501,7 @@ export function SettingsView({ onDone, onCalibrate }: Props) {
             </button>
           </div>
           <p className="settings__note">
-            Easiest done on the table: open a story in table mode and press <strong>Layout</strong> to drag these
+            Easiest done on the table: open a story in table mode and press <strong>Adjust</strong> to drag these
             edges into place. Fine-tune here.
           </p>
 
@@ -522,7 +542,7 @@ export function SettingsView({ onDone, onCalibrate }: Props) {
             </button>
           </div>
           <p className="settings__note">
-            Lines the map up with the relief model. Easiest by eye on the table with <strong>Align</strong>; the
+            Lines the map up with the relief model. Easiest by eye on the table with <strong>Adjust</strong>; the
             numbers are here to copy between machines or undo a bad nudge.
           </p>
           <div className="settings__row">
