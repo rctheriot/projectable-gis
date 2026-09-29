@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { MarkerSet } from '@/pucks/detectMarkers';
 import type { SourceKind } from '@/pucks/usePucks';
 
 /**
@@ -33,6 +34,8 @@ export interface Settings {
    * rotation restarted) every time one happened.
    */
   holdMs: number;
+  /** Which printed markers the camera looks for: new prints, or the old plastic pucks. */
+  markerSet: MarkerSet;
   /**
    * Most wrong pattern bits a marker read may have and still count. The markers'
    * codes are at least 12 bits apart, so up to 5 is always unambiguous; above that
@@ -87,6 +90,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraHeight: 1080,
   detectionWidth: 960,
   holdMs: 600,
+  markerSet: 'mip',
   maxBitErrors: 5,
   trackerUrl: 'ws://localhost:8765',
   // 27.5% of the rig's 4096px throw, where the legacy app put the map's left edge.

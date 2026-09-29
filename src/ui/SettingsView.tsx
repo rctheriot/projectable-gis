@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clearCalibration, loadCalibration, saveCalibration, type Calibration } from '@/pucks/calibration';
+import type { MarkerSet } from '@/pucks/detectMarkers';
 import type { SourceKind } from '@/pucks/usePucks';
 import { DEFAULT_SETTINGS, pickSettings, useSettings, type Settings } from '@/state/useSettings';
 
@@ -12,6 +13,19 @@ const SOURCES: { value: SourceKind; label: string; hint: string }[] = [
   { value: 'keyboard', label: 'Keyboard', hint: 'For development. Arrows rotate, WASD slide, 1-4 pick a puck.' },
   { value: 'camera', label: 'Webcam', hint: 'The camera under the table. Needs a calibration.' },
   { value: 'websocket', label: 'External tracker', hint: 'A separate detector process sending table coordinates.' },
+];
+
+const MARKER_SETS: { value: MarkerSet; label: string; hint: string }[] = [
+  {
+    value: 'mip',
+    label: 'Printed markers',
+    hint: 'What npm run markers generates (ARUCO_MIP_36h12, IDs 0–3).',
+  },
+  {
+    value: 'legacy',
+    label: 'Old plastic pucks',
+    hint: 'The 2022 pucks (original ARUCO): 384 dial, 6 layer, 7 add/remove, 11 scenario.',
+  },
 ];
 
 type NumericKey = {
@@ -395,6 +409,20 @@ export function SettingsView({ onDone, onCalibrate }: Props) {
             </p>
 
             <h3 className="settings__groupTitle">Tracking</h3>
+            <div className="settings__choices">
+              {MARKER_SETS.map((option) => (
+                <label key={option.value} className={`choice${draft.markerSet === option.value ? ' is-selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="markerSet"
+                    checked={draft.markerSet === option.value}
+                    onChange={() => update('markerSet', option.value)}
+                  />
+                  <span className="choice__label">{option.label}</span>
+                  <span className="choice__hint">{option.hint}</span>
+                </label>
+              ))}
+            </div>
             <div className="settings__row">
               {number('detectionWidth', 'Detection width', { min: 320, max: 3840, unit: 'px', step: 80 })}
               {number('holdMs', 'Hold lost pucks for', { min: 0, max: 5000, unit: 'ms', step: 50 })}
@@ -408,7 +436,7 @@ export function SettingsView({ onDone, onCalibrate }: Props) {
             </p>
             <p className="settings__note">
               <strong>Bit errors allowed</strong>: each marker is 36 cells, and a read may get this many wrong and
-              still count. Up to 5 is always safe. 6&ndash;8 reads more blurry markers but can occasionally mistake
+              still count (old pucks: at most 1, whatever this says). Up to 5 is always safe. 6&ndash;8 reads more blurry markers but can occasionally mistake
               one puck for another. The status bar says why squares were not read: <em>border</em> means glare or
               blur on the marker&rsquo;s edge; <em>pattern</em> with &ldquo;closest N bits off&rdquo; tells you
               whether raising this would help.

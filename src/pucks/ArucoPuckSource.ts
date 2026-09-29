@@ -1,7 +1,20 @@
+import type { MarkerSet } from '@/pucks/detectMarkers';
 import type { DetectResponse } from '@/workers/aruco.worker';
 import { applyHomography, type Homography } from './homography';
 import { loadCalibration } from './calibration';
 import type { PuckFrame, PuckReading, PuckSource } from './types';
+
+/**
+ * The old plastic pucks' marker IDs (original ARUCO dictionary), mapped to the role
+ * IDs every story binds: 0 the dial, 1 layer select, 2 add/remove, 3 scenario.
+ * From the 2022 app's `assets/defaultData/markers.ts`. Other old IDs are ignored.
+ */
+export const LEGACY_MARKER_IDS: Record<number, number> = {
+  384: 0, // year / dial
+  6: 1, // layer
+  7: 2, // add / remove
+  11: 3, // scenario
+};
 
 /** How far back the per-marker hit rate looks. */
 const HIT_WINDOW_MS = 2000;
@@ -16,6 +29,8 @@ export interface ArucoOptions {
   detectionWidth?: number;
   /** See `Settings.maxBitErrors`. */
   maxBitErrors?: number;
+  /** See `Settings.markerSet`. */
+  markerSet?: MarkerSet;
 }
 
 /**
@@ -234,7 +249,13 @@ export class ArucoPuckSource implements PuckSource {
         this.scale = native / bitmap.width;
         this.frameId += 1;
         this.worker.postMessage(
-          { type: 'detect', bitmap, frameId: this.frameId, maxBitErrors: this.options.maxBitErrors ?? 5 },
+          {
+            type: 'detect',
+            bitmap,
+            frameId: this.frameId,
+            markerSet: this.options.markerSet ?? 'mip',
+            maxBitErrors: this.options.maxBitErrors ?? 5,
+          },
           [bitmap],
         );
       } catch {
@@ -265,7 +286,9 @@ export class ArucoPuckSource implements PuckSource {
     for (const detected of response.markers) {
       if (detected.corners.length < 4) continue;
 
-      const id = detected.id;
+      // Old pucks carry their own IDs; translate them to the role a story binds.
+      const id = this.options.markerSet === 'legacy' ? LEGACY_MARKER_IDS[detected.id] : detected.id;
+      if (id === undefined) continue;
       for (let i = 0; i < detected.corners.length; i += 1) {
         const a = detected.corners[i]!;
         const b = detected.corners[(i + 1) % detected.corners.length]!;

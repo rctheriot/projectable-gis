@@ -27,9 +27,11 @@ export function CalibrationView({ onDone }: Props) {
   const height = useSettings((s) => s.cameraHeight);
   const detectionWidth = useSettings((s) => s.detectionWidth);
   const maxBitErrors = useSettings((s) => s.maxBitErrors);
+  const markerSet = useSettings((s) => s.markerSet);
   const source = useMemo(
-    () => new ArucoPuckSource({ deviceId: deviceId || undefined, width, height, detectionWidth, maxBitErrors }),
-    [deviceId, width, height, detectionWidth, maxBitErrors],
+    () =>
+      new ArucoPuckSource({ deviceId: deviceId || undefined, width, height, detectionWidth, maxBitErrors, markerSet }),
+    [deviceId, width, height, detectionWidth, maxBitErrors, markerSet],
   );
   const [markers, setMarkers] = useState<PuckReading[]>([]);
   const [captured, setCaptured] = useState<Correspondence[]>([]);
