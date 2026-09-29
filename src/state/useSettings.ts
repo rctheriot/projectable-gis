@@ -20,6 +20,25 @@ export interface Settings {
   cameraDeviceId: string;
   cameraWidth: number;
   cameraHeight: number;
+  /**
+   * Width, in pixels, that camera frames are scaled to before marker detection.
+   *
+   * Smaller is faster, which means more frames; markers read reliably from about
+   * 30px across in the scaled frame.
+   */
+  detectionWidth: number;
+  /**
+   * How long a puck is kept at its last position after the camera loses it, in ms.
+   * Single dropped frames are normal; without this a puck blinked out (and its
+   * rotation restarted) every time one happened.
+   */
+  holdMs: number;
+  /**
+   * Most wrong pattern bits a marker read may have and still count. The markers'
+   * codes are at least 12 bits apart, so up to 5 is always unambiguous; above that
+   * a badly misread marker can come out as a *different* marker.
+   */
+  maxBitErrors: number;
   /** External tracker endpoint, used when the source is `websocket`. */
   trackerUrl: string;
 
@@ -66,6 +85,9 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraDeviceId: '',
   cameraWidth: 1920,
   cameraHeight: 1080,
+  detectionWidth: 960,
+  holdMs: 600,
+  maxBitErrors: 5,
   trackerUrl: 'ws://localhost:8765',
   // 27.5% of the rig's 4096px throw, where the legacy app put the map's left edge.
   railWidth: 1120,

@@ -503,24 +503,6 @@ button { font: inherit; color: inherit; }
   pointer-events: none;
 }
 
-.layout-panel {
-  position: absolute;
-  right: 1.5rem;
-  bottom: 3rem;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  width: 20rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  background: #000;
-}
-
-.layout-panel .align__lede, .layout-panel .align__note { margin: 0; }
-
 /* ---- rail content ---- */
 
 .rail__header { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -1174,37 +1156,73 @@ label.button { display: inline-flex; align-items: center; }
 .settings__bar.is-dirty .settings__barStatus { color: var(--ink); }
 .settings__barStatus.is-error { color: #f0b3bb; }
 
-/* --------------------------------------------------------- align overlay */
+/* ---------------------------------------------------------- adjust panel */
 
 /*
- * Sits over the live map so the coastline stays visible underneath; only the
- * instruction panel is lit, and it is pinned away from the island.
+ * Layout and alignment in one panel, pinned to the map area's corner so the
+ * coastline stays visible while you work. Only the panel is lit.
  */
-.align {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-}
-
-.align__panel {
+.adjust {
   position: absolute;
   right: 1.5rem;
-  bottom: 3rem;
-  width: 18rem;
+  bottom: 2.6rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 22rem;
+  max-height: calc(100% - 4rem);
   padding: 1rem 1.1rem;
-  border: 1px solid var(--border-strong);
+  overflow-y: auto;
+  border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: #000;
 }
 
-.align__title { margin: 0 0 0.3rem; font-size: 1.1em; font-weight: 500; }
-.align__lede { margin: 0 0 0.8rem; color: var(--ink-secondary); font-size: 0.85em; }
+.adjust__head, .adjust__sectionHead { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.adjust__title { margin: 0; font-size: 1.1em; font-weight: 500; }
 
-.align__keys { display: grid; gap: 0.3rem; margin: 0 0 0.8rem; font-size: 0.85em; }
-.align__keys > div { display: flex; align-items: center; gap: 0.6rem; }
-.align__keys dt { display: flex; gap: 0.2rem; }
-.align__keys dd { margin: 0; color: var(--ink-muted); }
+.adjust__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.adjust__sectionTitle {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.adjust__text { margin: 0; color: var(--ink-secondary); font-size: 0.82em; line-height: 1.6; }
+.adjust__values { margin: 0; font-size: 0.8em; font-variant-numeric: tabular-nums; }
+.adjust__warn { margin: 0; color: #e8b27a; font-size: 0.76em; }
+.adjust__note { margin: 0; color: var(--ink-muted); font-size: 0.76em; }
+
+.adjust__pad { display: flex; align-items: center; gap: 1rem; }
+.adjust__arrows { display: grid; grid-template-columns: repeat(3, 2.2rem); gap: 0.25rem; }
+.adjust__pair { display: grid; gap: 0.25rem; }
+
+.adjust__nudge {
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1em;
+  line-height: 1;
+}
+
+.adjust__nudge:hover { border-color: var(--accent); }
+.adjust__nudge:active { background: rgb(74 134 232 / 25%); }
 
 kbd {
   display: inline-block;
@@ -1216,6 +1234,3 @@ kbd {
   font-size: 0.9em;
   text-align: center;
 }
-
-.align__values { margin: 0; font-size: 0.82em; font-variant-numeric: tabular-nums; }
-.align__note { margin: 0.3rem 0 0; color: var(--ink-muted); font-size: 0.78em; }

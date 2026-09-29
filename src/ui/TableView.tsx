@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CapacityLine } from '@/charts/CapacityLine';
 import { GenerationBars } from '@/charts/GenerationBars';
 import { StoryMap } from '@/map/StoryMap';
@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS, useSettings } from '@/state/useSettings';
 import { useStore } from '@/state/useStore';
 import { dialLabel, formatDial, formatDialRange } from '@/story/dial';
 import type { LoadedStory } from '@/story/loadStory';
-import { AlignOverlay } from './AlignOverlay';
+import { AdjustPanel } from './AdjustPanel';
 import { Legend } from './Legend';
 import { PuckOverlay } from './PuckOverlay';
 import { FloatingLegend, TableFrame } from './TableFrame';
@@ -42,7 +42,7 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
   const scenario = story.scenarios[scenarioIndex] ?? story.scenarios[0];
   const armedLayer = story.layers[armedLayerIndex];
 
-  const [mode, setMode] = useState<null | 'align' | 'layout'>(null);
+  const [adjusting, setAdjusting] = useState(false);
   const mapScale = useSettings((s) => s.mapScale);
   const mapOffsetX = useSettings((s) => s.mapOffsetX);
   const mapOffsetY = useSettings((s) => s.mapOffsetY);
@@ -62,16 +62,6 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
     }),
     [story, year, scenario, armedLayer, activeLayerIds],
   );
-
-  // Esc leaves layout mode; the align overlay handles its own keys.
-  useEffect(() => {
-    if (mode !== 'layout') return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' || event.key === 'Enter') setMode(null);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mode]);
 
   const top = (
     <>
@@ -108,7 +98,7 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
 
   const area = (
     <>
-      <FloatingLegend editing={mode === 'layout'}>
+      <FloatingLegend editing={adjusting}>
         <h2 className="rail__sectionTitle">Layers</h2>
         <Legend
           loaded={loaded}
@@ -121,27 +111,11 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
         {armedLayer?.description ? <p className="rail__note">{armedLayer.description}</p> : null}
       </FloatingLegend>
 
-      {mode === 'align' ? <AlignOverlay onDone={() => setMode(null)} /> : null}
-
-      {mode === 'layout' ? (
-        <div className="layout-panel">
-          <h2 className="align__title">Layout</h2>
-          <p className="align__lede">
-            Drag the highlighted edges to fit the table: the puck area&rsquo;s width, the gap over the 80/20 bar, and
-            the split between chart and pucks. Drag the layer list by its title bar.
-          </p>
-          <p className="align__note">
-            Saved automatically. The map does not move. If you change the puck area, recalibrate the camera.
-          </p>
-          <button type="button" className="button button--primary" onClick={() => setMode(null)}>
-            Done
-          </button>
-        </div>
-      ) : null}
+      {adjusting ? <AdjustPanel onDone={() => setAdjusting(false)} /> : null}
 
       <footer className="status-bar">
         <span className={`status-bar__dot${status.connected ? ' is-connected' : ''}`} aria-hidden />
-        <span className="status-bar__detail">
+        <span className="status-bar__detail" title={status.detail}>
           {sourceLabel}: {status.detail}
         </span>
         <span className="status-bar__actions">
@@ -152,17 +126,11 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
           ) : null}
           <button
             type="button"
-            className={`status-bar__action${mode === 'layout' ? ' is-active' : ''}`}
-            onClick={() => setMode(mode === 'layout' ? null : 'layout')}
+            className={`status-bar__action${adjusting ? ' is-active' : ''}`}
+            onClick={() => setAdjusting((on) => !on)}
+            title="Fit the layout and map to the table"
           >
-            Layout
-          </button>
-          <button
-            type="button"
-            className={`status-bar__action${mode === 'align' ? ' is-active' : ''}`}
-            onClick={() => setMode(mode === 'align' ? null : 'align')}
-          >
-            Align
+            Adjust
           </button>
           <button type="button" className="status-bar__action" onClick={onOpenSettings}>
             Settings
@@ -175,7 +143,7 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
   return (
     <div className="table-view">
       <TableFrame
-        editing={mode === 'layout'}
+        editing={adjusting}
         top={top}
         pucks={<PuckOverlay pucks={pucks} readouts={readouts} />}
         area={area}
