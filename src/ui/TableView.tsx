@@ -7,6 +7,7 @@ import { DEFAULT_SETTINGS, useSettings } from '@/state/useSettings';
 import { useStore } from '@/state/useStore';
 import { dialLabel, formatDial, formatDialRange } from '@/story/dial';
 import type { LoadedStory } from '@/story/loadStory';
+import { TourPanel, TourPlayButton, useTourRunner } from '@/tour/TourControls';
 import { AdjustPanel } from './AdjustPanel';
 import { Legend } from './Legend';
 import { PuckOverlay } from './PuckOverlay';
@@ -43,6 +44,8 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
   const armedLayer = story.layers[armedLayerIndex];
 
   const [adjusting, setAdjusting] = useState(false);
+  const runner = useTourRunner(story.tour);
+  const touring = useStore((s) => s.tourStatus !== 'idle');
   const mapScale = useSettings((s) => s.mapScale);
   const mapOffsetX = useSettings((s) => s.mapOffsetX);
   const mapOffsetY = useSettings((s) => s.mapOffsetY);
@@ -69,7 +72,10 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
         <button type="button" className="rail__back" onClick={onClose}>
           &larr; Stories
         </button>
-        <h1 className="rail__title">{story.title}</h1>
+        <div className="rail__titleRow">
+          <h1 className="rail__title">{story.title}</h1>
+          {story.tour && runner && !touring ? <TourPlayButton tour={story.tour} runner={runner} /> : null}
+        </div>
       </header>
 
       <div className="readout-row">
@@ -145,7 +151,15 @@ export function TableView({ loaded, sourceKind, websocketUrl, onClose, onOpenSet
       <TableFrame
         editing={adjusting}
         top={top}
-        pucks={<PuckOverlay pucks={pucks} readouts={readouts} />}
+        pucks={
+          // The tour takes over the puck zone: the pucks do nothing while it plays,
+          // and this is the part of the table visitors stand at.
+          story.tour && runner && touring ? (
+            <TourPanel tour={story.tour} runner={runner} variant="table" />
+          ) : (
+            <PuckOverlay pucks={pucks} readouts={readouts} />
+          )
+        }
         area={area}
         background={
           <StoryMap

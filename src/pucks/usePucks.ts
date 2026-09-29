@@ -113,6 +113,13 @@ export function usePucks(bindings: PuckBinding[], kind: SourceKind, websocketUrl
 
         // The raw angle, not a smoothed one: the integrator already banks the
         // remainder, and smoothing would only delay steps.
+        // During a narrated tour the pucks do nothing, and nothing banks: turning
+        // one mid-story must not fire a burst of steps the moment the story ends.
+        if (store.tourStatus !== 'idle') {
+          rotation.reset();
+          continue;
+        }
+
         const steps = rotation.update(reading.angle);
         if (steps === 0) continue;
 

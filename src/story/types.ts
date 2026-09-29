@@ -296,6 +296,49 @@ export interface DialSpec {
   labels?: string[];
 }
 
+/**
+ * What the map shows during one step of a narrated tour. Each step states the
+ * whole view rather than changes to it, so any step can be jumped to or replayed
+ * and still look right.
+ */
+export interface TourView {
+  /** Dial position; omitted keeps the current one. */
+  year?: number;
+  /** Scenario id; omitted keeps the current one. */
+  scenario?: string;
+  /** Exactly the layers visible during the step. */
+  layers: string[];
+}
+
+export interface TourStep {
+  id: string;
+  /** Short headline shown large while the step plays. */
+  title: string;
+  /** What the narrator says, also shown as the caption. */
+  narration: string;
+  view: TourView;
+  /** Moves the dial from `view.year` to this value over the length of the narration. */
+  sweepTo?: number;
+  /**
+   * Recorded narration, when `npm run narrate` has produced audio for exactly this
+   * text. Absent, the browser's own speech reads the narration instead.
+   */
+  audio?: string;
+}
+
+/**
+ * A narrated walk through a story, for a visitor who walks up and presses play.
+ *
+ * Tours only change layers, the dial, the scenario and the captions -- never the
+ * map camera, which on the table is registered to the physical relief model.
+ */
+export interface Tour {
+  title: string;
+  /** Unreviewed wording; shown as such so it is not mistaken for approved text. */
+  draft?: boolean;
+  steps: TourStep[];
+}
+
 export interface Story {
   id: string;
   title: string;
@@ -318,4 +361,5 @@ export interface Story {
    * so filtering a chart never repaints the series that remain.
    */
   seriesOrder: string[];
+  tour?: Tour;
 }

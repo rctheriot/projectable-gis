@@ -9,6 +9,7 @@
  * `npm run prepare-story`. No application code changes.
  */
 import path from 'node:path';
+import { oahuEnergyTour } from './oahu-energy-tour.mjs';
 import { PROJECT_ROOT } from './paths.mjs';
 
 /** Where this story's raw assets live, relative to the project root. */
@@ -122,6 +123,14 @@ const STORY = {
   ],
 };
 
+/**
+ * Steepest ground utility-scale solar is shown as able to use, in degrees.
+ *
+ * DRAFT -- awaiting confirmation of the intended rule (degrees or percent grade:
+ * 20° is a 36% grade, 20% is about 11.3°). Change this one number and rebuild.
+ */
+const SOLAR_MAX_SLOPE_DEGREES = 20;
+
 /** Layers, drawn bottom-first. */
 const SOURCE_LAYERS = [
   {
@@ -170,6 +179,28 @@ const SOURCE_LAYERS = [
     fill: { type: 'static' },
   },
   {
+    id: 'slope',
+    name: 'Terrain Slope',
+    description:
+      'How steep the ground is, from USGS 3DEP elevation at the base map’s resolution: dark is flat, bright is steep. Oahu’s flat land is the leeward plains and the central plateau — the same places the island farms, builds and lives.',
+    render: 'raster',
+    color: '#8878F0',
+    opacity: 0.75,
+    ramp: ['#1B1440', '#4B3A9E', '#8878F0', '#C9C0FF', '#F2EEFF'],
+    terrain: { kind: 'slope', mode: 'ramp', maxValue: 45 },
+    fill: { type: 'static' },
+  },
+  {
+    id: 'too-steep',
+    name: `Too Steep for Solar (>${SOLAR_MAX_SLOPE_DEGREES}°)`,
+    description: `Ground steeper than ${SOLAR_MAX_SLOPE_DEGREES}°, hatched out: too steep to terrace for utility-scale panels. What is left is the flat and gently sloping land every other use also wants.`,
+    render: 'raster',
+    color: '#E0403A',
+    opacity: 0.9,
+    terrain: { kind: 'slope', mode: 'steep', threshold: SOLAR_MAX_SLOPE_DEGREES },
+    fill: { type: 'static' },
+  },
+  {
     id: 'solar',
     name: 'Utility-Scale Solar',
     description:
@@ -186,9 +217,10 @@ const SOURCE_LAYERS = [
       budget: { terms: [{ source: 'generation', technologies: ['PV'] }, { source: 'curtailment', technologies: ['PV'] }] },
       sortBy: [{ property: 'cf_1', direction: 'desc' }],
       cost: { properties: ['cf_1', 'capacity'], constant: 8760 },
-      // Only 0.2% of this land is built in 2016, so without a faint tint on the
-      // rest the layer looks like it failed to switch on.
-      unbuiltColor: 'rgba(232, 137, 46, 0.16)',
+      // Only 0.2% of this land is built in 2016, so without a tint on the rest the
+      // layer looks like it failed to switch on. White, not a pale orange: a pale
+      // orange disappeared into the brown and green of the satellite terrain.
+      unbuiltColor: 'rgba(255, 255, 255, 0.45)',
     },
   },
   {
@@ -281,4 +313,8 @@ const SOURCE_LAYERS = [
   },
 ];
 
-export const oahuEnergy = { ...STORY, layers: SOURCE_LAYERS };
+export const oahuEnergy = {
+  ...STORY,
+  layers: SOURCE_LAYERS,
+  tour: oahuEnergyTour({ maxSlopeDegrees: SOLAR_MAX_SLOPE_DEGREES }),
+};

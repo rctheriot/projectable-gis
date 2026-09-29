@@ -19,6 +19,8 @@ import path from 'node:path';
 import { annotateBuildout } from './lib/buildout.mjs';
 import { simplifyFeatures } from './lib/simplify.mjs';
 import { readRainfall, sumGrids, writeRainfallImage, readToken } from './lib/hcdp.mjs';
+import { fetchElevation, slopeDegrees, slopeStats, writeSlopeImage } from './lib/terrain.mjs';
+import { narrationDir, narrationHash, readNarrationManifest } from './lib/narration.mjs';
 import { PROJECT_ROOT } from './lib/paths.mjs';
 import { STORIES } from './lib/stories.mjs';
 
@@ -301,6 +303,82 @@ async function buildRasterSeries(story, layer, OUT) {
   return { frames, corners: grids[0].grid.corners };
 }
 
+/**
+ * Builds a terrain raster (slope) from USGS 3DEP elevation.
+ *
+ * Elevation is fetched at exactly the base map's corners and pixel size, once per
+ * story, so every terrain layer lines up with the base map pixel for pixel.
+ */
+async function buildTerrainRaster(story, layer, OUT, baseMap, terrainCache) {
+  if (!terrainCache.slope) {
+    const { width, height } = baseMap;
+    const grid = await fetchElevation(story.corners, width, height, CACHE_DIR);
+    terrainCache.slope = { grid, slope: slopeDegrees(grid) };
+  }
+  const { grid, slope } = terrainCache.slope;
+
+  const dir = path.join(OUT, 'rasters');
+  await mkdir(dir, { recursive: true });
+  const file = `${layer.id}.webp`;
+  const { mode, threshold, maxValue } = layer.terrain;
+  await writeSlopeImage(slope, grid, { outFile: path.join(dir, file), mode, threshold, maxValue, ramp: layer.ramp, color: layer.color });
+
+  if (mode === 'steep') {
+    const { steepShare, landSqKm } = slopeStats(slope, grid, threshold);
+    log(`  ${layer.id.padEnd(18)} ${(steepShare * 100).toFixed(1)}% of ${Math.round(landSqKm)} km² steeper than ${threshold}°`);
+  } else {
+    log(`  ${layer.id.padEnd(18)} slope ${grid.width}x${grid.height}`);
+  }
+
+  return {
+    // One frame, shown from the start of the dial.
+    frames: [{ value: story.years.min, image: `stories/${story.id}/rasters/${file}` }],
+    corners: story.corners,
+  };
+}
+
+/**
+ * Checks a story's tour against its layers and scenarios, and bundles any recorded
+ * narration that still matches its text. A typo in a layer id would otherwise show
+ * up only as a step where nothing appears.
+ */
+async function buildTour(story, OUT) {
+  const tour = story.tour;
+  const layerIds = new Set(story.layers.map((layer) => layer.id));
+  const scenarioIds = new Set(story.scenarios.map((scenario) => scenario.id));
+
+  for (const step of tour.steps) {
+    for (const id of step.view.layers) {
+      if (!layerIds.has(id)) throw new Error(`Tour step "${step.id}" shows unknown layer "${id}"`);
+    }
+    if (step.view.scenario && !scenarioIds.has(step.view.scenario)) {
+      throw new Error(`Tour step "${step.id}" uses unknown scenario "${step.view.scenario}"`);
+    }
+  }
+
+  const manifest = await readNarrationManifest(story.id);
+  const dir = path.join(OUT, 'tour');
+  let recorded = 0;
+  const steps = [];
+  for (const step of tour.steps) {
+    const entry = manifest.steps[step.id];
+    const current = entry && manifest.voice && entry.hash === narrationHash(step.narration, manifest.voice);
+    if (current) {
+      await mkdir(dir, { recursive: true });
+      await copyFile(path.join(narrationDir(story.id), entry.file), path.join(dir, entry.file));
+      recorded += 1;
+    }
+    steps.push({ ...step, audio: current ? `stories/${story.id}/tour/${entry.file}` : undefined });
+  }
+
+  const missing = tour.steps.length - recorded;
+  log(
+    `  tour: ${tour.steps.length} steps, ${recorded} recorded` +
+      (missing ? ` — ${missing} will use browser speech until \`npm run narrate\`` : ''),
+  );
+  return { ...tour, steps };
+}
+
 async function buildLayer(story, layer, joinTables, SOURCE, OUT) {
   let geojson;
   let features;
@@ -404,7 +482,12 @@ async function buildStory(story) {
   log('\n  layer            before      after');
   const layerPaths = new Map();
   const rasterSeries = new Map();
+  const terrainCache = {};
   for (const layer of story.layers) {
+    if (layer.render === 'raster' && layer.terrain) {
+      rasterSeries.set(layer.id, await buildTerrainRaster(story, layer, OUT, baseMap, terrainCache));
+      continue;
+    }
     if (layer.render === 'raster') {
       const built = await buildRasterSeries(story, layer, OUT);
       if (built) rasterSeries.set(layer.id, built);
@@ -432,6 +515,8 @@ async function buildStory(story) {
   }
   log(`  wrote ${icons} icons`);
 
+  const tour = story.tour ? await buildTour(story, OUT) : undefined;
+
   const bundle = {
     id: story.id,
     title: story.title,
@@ -450,6 +535,7 @@ async function buildStory(story) {
     })),
     charts: story.charts,
     pucks: story.pucks,
+    tour,
     layers: story.layers
       // A raster layer whose data could not be fetched is left out entirely
       // rather than shipped as a legend entry that shows nothing.

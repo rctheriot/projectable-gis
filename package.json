@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "prepare-story": "node scripts/build-story.mjs",
     "markers": "node scripts/generate-markers.mjs",
+    "narrate": "node scripts/narrate.mjs",
     "check:token-leak": "node scripts/check-token-leak.mjs"
   },
   "dependencies": {

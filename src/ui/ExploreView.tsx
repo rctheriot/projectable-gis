@@ -5,6 +5,7 @@ import { StoryMap } from '@/map/StoryMap';
 import { useStore } from '@/state/useStore';
 import { dialLabel, formatDial, formatDialRange } from '@/story/dial';
 import type { LoadedStory } from '@/story/loadStory';
+import { TourPanel, TourPlayButton, useTourRunner } from '@/tour/TourControls';
 import { Legend } from './Legend';
 
 interface Props {
@@ -25,6 +26,8 @@ const PLAYBACK_RATE = 6;
  */
 export function ExploreView({ loaded, onClose }: Props) {
   const { story } = loaded;
+  const runner = useTourRunner(story.tour);
+  const touring = useStore((s) => s.tourStatus !== 'idle');
   const singleYear = story.years.min === story.years.max;
 
   const year = useStore((s) => s.year);
@@ -77,7 +80,10 @@ export function ExploreView({ loaded, onClose }: Props) {
           <button type="button" className="explore__back" onClick={onClose}>
             &larr; All stories
           </button>
-          <h1 className="explore__title">{story.title}</h1>
+          <div className="explore__titleRow">
+            <h1 className="explore__title">{story.title}</h1>
+            {story.tour && runner && !touring ? <TourPlayButton tour={story.tour} runner={runner} /> : null}
+          </div>
           {story.subtitle ? <p className="explore__subtitle">{story.subtitle}</p> : null}
         </div>
 
@@ -130,6 +136,8 @@ export function ExploreView({ loaded, onClose }: Props) {
         activeLayerIds={activeLayerIds}
         interactive
       />
+
+      {story.tour && runner && touring ? <TourPanel tour={story.tour} runner={runner} variant="explore" /> : null}
 
       {!singleYear ? (
         <footer className="timeline">
